@@ -1,0 +1,152 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{{ lesson.title }}{% endblock %}
+{% block page_title %}
+  {% if lesson.title|slice:":1" == "—" %}
+    Alt Konu
+  {% else %}
+    Ders
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="card card-outline card-secondary">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">
+          <i class="fas fa-book"></i>
+          {% if lesson.title|slice:":1" == "—" %}
+            <span class="badge badge-info mr-2">Alt Konu</span>
+          {% endif %}
+          {{ lesson.title }}
+        </h3>
+
+        <div>
+          <a class="btn btn-sm btn-outline-primary" href="/courses/{{ lesson.course.id }}/">
+            <i class="fas fa-arrow-left"></i> Kursa dön
+          </a>
+
+          {% if request.user.role == "TEACHER" or request.user.role == "ADMIN" %}
+            <a class="btn btn-sm btn-outline-primary" href="/teacher/lesson/{{ lesson.id }}/file/new/">
+              <i class="fas fa-file-upload"></i> Dosya yükle
+            </a>
+            <a class="btn btn-sm btn-outline-primary" href="/teacher/lesson/{{ lesson.id }}/video/new/">
+              <i class="fas fa-upload"></i> Video yükle
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body">
+        {% if lesson.body %}
+          <p class="mb-0">{{ lesson.body }}</p>
+        {% else %}
+          <p class="text-muted mb-0">Bu ders için açıklama yok.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- VIDEOLAR -->
+  <div class="col-lg-7">
+    <div class="card card-outline card-info">
+      <div class="card-header">
+        <h3 class="card-title mb-0"><i class="fas fa-film"></i> Videolar</h3>
+      </div>
+
+      <div class="card-body">
+        {% for v in lesson.videos.all %}
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <b>{{ v.title|default:"Video" }}</b>
+              <a class="btn btn-sm btn-primary" href="{{ v.video.url }}" target="_blank">
+                <i class="fas fa-download"></i> İndir
+              </a>
+            </div>
+
+            <div class="border rounded p-2">
+              <video controls style="width:100%; max-height:420px;">
+                <source src="{{ v.video.url }}" type="video/mp4">
+                Tarayıcınız video oynatmayı desteklemiyor.
+              </video>
+            </div>
+          </div>
+        {% empty %}
+          <p class="text-muted mb-0">Bu derse ait video yok.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- DOSYALAR + DURUM -->
+  <div class="col-lg-5">
+    <!-- DOSYALAR -->
+    <div class="card card-outline card-primary">
+      <div class="card-header">
+        <h3 class="card-title mb-0"><i class="far fa-file"></i> Dosyalar</h3>
+      </div>
+
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+          {% for f in lesson.files.all %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>{% if f.title %}{{ f.title }}{% else %}Dosya{% endif %}</span>
+              <a class="btn btn-sm btn-primary" href="{{ f.file.url }}" target="_blank">
+                Aç / İndir
+              </a>
+            </li>
+          {% empty %}
+            <li class="list-group-item text-muted">Dosya yok</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- STUDENT PROGRESS -->
+    {% if request.user.role == "STUDENT" %}
+      <div class="card card-outline card-success">
+        <div class="card-header">
+          <h3 class="card-title mb-0"><i class="fas fa-check-circle"></i> Ders Durumu</h3>
+        </div>
+
+        <div class="card-body">
+          {% if prog.completed %}
+            <div class="alert alert-success mb-3">
+              <b>✅ Tamamlandı</b><br>
+              <small>{{ prog.completed_at }}</small>
+            </div>
+
+            <div class="progress">
+              <div class="progress-bar bg-success" role="progressbar" style="width: 100%">
+                %100
+              </div>
+            </div>
+          {% else %}
+            <div class="progress mb-3">
+              <div class="progress-bar bg-warning" role="progressbar" style="width: 0%">
+                %0
+              </div>
+            </div>
+
+            <form method="post" action="/lessons/{{ lesson.id }}/complete/">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success btn-block">
+                ✅ Tamamladım
+              </button>
+            </form>
+
+            <small class="text-muted d-block mt-2">
+              Bu butona basınca ders “tamamlandı” olarak işaretlenir.
+            </small>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

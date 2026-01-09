@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Ders Ekle</title></head>
+<body>
+<h2>{{ course.title }} - Ders Ekle</h2>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Kaydet</button>
+</form>
+<p><a href="/courses/{{ course.id }}/">Kursa dön</a></p>
+</body></html>

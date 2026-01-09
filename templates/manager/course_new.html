@@ -1,0 +1,16 @@
+{% extends "layout/base.html" %}
+{% block title %}Kurs Oluştur{% endblock %}
+{% block page_title %}Kurs Oluştur{% endblock %}
+
+{% block content %}
+<div class="card card-outline card-primary">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn btn-success" type="submit">Kaydet</button>
+      <a class="btn btn-outline-secondary" href="/manager/courses/">Geri</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

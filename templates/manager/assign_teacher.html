@@ -1,0 +1,16 @@
+{% extends "layout/base.html" %}
+{% block title %}Öğretmen Ata{% endblock %}
+{% block page_title %}{{ course.title }} - Öğretmen Ata{% endblock %}
+
+{% block content %}
+<div class="card card-outline card-warning">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn btn-success" type="submit">Ata</button>
+      <a class="btn btn-outline-secondary" href="/manager/courses/">Geri</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

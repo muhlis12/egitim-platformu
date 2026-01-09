@@ -1,0 +1,197 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Sonuçlar - {{ exam.title }}{% endblock %}
+{% block page_title %}{{ exam.title }} - Sonuçlar{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="card card-outline card-primary">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">
+          <i class="fas fa-chart-bar"></i> {{ exam.course.title }} / {{ exam.title }}
+        </h3>
+        <a class="btn btn-sm btn-outline-secondary" href="/courses/{{ exam.course.id }}/">
+          <i class="fas fa-arrow-left"></i> Kursa dön
+        </a>
+      </div>
+
+      <div class="card-body">
+
+        <!-- Filtre Alanı -->
+        <form method="get" class="mb-3">
+          <div class="form-row align-items-end">
+            <div class="col-md-5">
+              <label>Öğrenci ara (username / ad / soyad)</label>
+              <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="örn: hasan">
+            </div>
+
+            <div class="col-md-3">
+              <div class="custom-control custom-checkbox mt-4">
+                <input type="checkbox" class="custom-control-input" id="finishedOnly"
+                       name="finished" value="1" {% if finished_only %}checked{% endif %}>
+                <label class="custom-control-label" for="finishedOnly">Sadece tamamlananlar</label>
+              </div>
+            </div>
+
+            <div class="col-md-4 text-right mt-3 mt-md-0">
+              <button class="btn btn-primary" type="submit">
+                <i class="fas fa-search"></i> Filtrele
+              </button>
+
+              <div class="btn-group ml-2">
+                <!-- CSV Export (mevcut filtreleri korur) -->
+                <a class="btn btn-success"
+                   href="?export=csv{% if q %}&q={{ q|urlencode }}{% endif %}{% if finished_only %}&finished=1{% endif %}">
+                  <i class="fas fa-file-csv"></i> CSV
+                </a>
+
+                <!-- ✅ XLSX Export (mevcut filtreleri korur) -->
+                <a class="btn btn-success"
+                   href="?export=xlsx{% if q %}&q={{ q|urlencode }}{% endif %}{% if finished_only %}&finished=1{% endif %}">
+                  <i class="fas fa-file-excel"></i> Excel
+                </a>
+              </div>
+
+              <a class="btn btn-outline-secondary ml-2" href="/teacher/exam/{{ exam.id }}/results/">
+                Temizle
+              </a>
+            </div>
+          </div>
+        </form>
+
+        <!-- Özet Kutuları -->
+        <div class="row text-center">
+          <div class="col-md-4">
+            <div class="small-box bg-info">
+              <div class="inner">
+                <h3>{{ total_count }}</h3>
+                <p>Listelenen Deneme</p>
+              </div>
+              <div class="icon"><i class="fas fa-list"></i></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="small-box bg-success">
+              <div class="inner">
+                <h3>{{ finished_count }}</h3>
+                <p>Tamamlanan</p>
+              </div>
+              <div class="icon"><i class="fas fa-check"></i></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="small-box bg-warning">
+              <div class="inner">
+                <h3>{{ avg_score }}</h3>
+                <p>Ortalama Puan</p>
+              </div>
+              <div class="icon"><i class="fas fa-star"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tablo -->
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Öğrenci</th>
+                <th>Başlangıç</th>
+                <th>Bitiş</th>
+                <th>Puan</th>
+                <th>Doğru</th>
+                <th>Yanlış</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in attempts %}
+                <tr>
+                  <td><b>{{ a.user.username }}</b></td>
+                  <td>{{ a.started_at }}</td>
+                  <td>
+                    {% if a.finished_at %}
+                      {{ a.finished_at }}
+                    {% else %}
+                      <span class="badge badge-secondary">Devam ediyor</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if a.finished_at %}
+                      <span class="badge badge-primary">{{ a.score }}</span>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>{{ a.correct_count }}</td>
+                  <td>{{ a.wrong_count }}</td>
+                  <td>
+                    <a class="btn btn-sm btn-outline-primary" href="/teacher/attempt/{{ a.id }}/">
+                      <i class="fas fa-eye"></i> Detay
+                    </a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="7" class="text-muted">Kayıt bulunamadı.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+<hr>
+
+<div class="card card-outline card-secondary">
+  <div class="card-header">
+    <h3 class="card-title mb-0">
+      <i class="fas fa-users"></i> Öğrenci Bazlı Özet
+    </h3>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>Öğrenci</th>
+            <th>Deneme</th>
+            <th>Ortalama</th>
+            <th>En Yüksek</th>
+            <th>Son Puan</th>
+            <th>Son Bitiş</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in student_summary %}
+            <tr>
+              <td><b>{{ s.user__username }}</b></td>
+              <td>{{ s.attempt_count }}</td>
+              <td>
+                {% if s.avg_score %}{{ s.avg_score|floatformat:2 }}{% else %}-{% endif %}
+              </td>
+              <td>
+                {% if s.best_score %}{{ s.best_score|floatformat:2 }}{% else %}-{% endif %}
+              </td>
+              <td>
+                {% if s.last_score != None %}{{ s.last_score|floatformat:2 }}{% else %}-{% endif %}
+              </td>
+              <td>
+                {% if s.last_finished %}{{ s.last_finished }}{% else %}-{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted">Özet için tamamlanan deneme yok.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}

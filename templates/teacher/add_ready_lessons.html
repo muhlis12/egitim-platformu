@@ -1,0 +1,38 @@
+{% extends "layout/base.html" %}
+{% block title %}Hazır Dersleri Ekle{% endblock %}
+{% block page_title %}{{ course.title }} - Hazır Dersler{% endblock %}
+
+{% block content %}
+<div class="card card-outline card-primary">
+  <div class="card-header">
+    <h3 class="card-title mb-0">
+      <i class="fas fa-layer-group"></i> Hazır Dersleri Kursa Ekle
+    </h3>
+  </div>
+
+  <div class="card-body">
+    {% if messages %}
+      {% for m in messages %}
+        <div class="alert alert-success">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+
+      <div class="alert alert-info">
+        Seçilen sınıf ve dersin konu başlıkları otomatik olarak kursa eklenecek.
+      </div>
+
+      <button class="btn btn-success" type="submit">
+        <i class="fas fa-plus"></i> Dersleri Ekle
+      </button>
+
+      <a class="btn btn-outline-secondary" href="/courses/{{ course.id }}/">
+        Kursa dön
+      </a>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "layout/base.html" %}
+{% block title %}Hazır Ders Ekle{% endblock %}
+{% block page_title %}{{ course.title }} - Hazır Ders Ekle{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for m in messages %}
+    <div class="alert alert-success">{{ m }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="card card-outline card-info">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn btn-success" type="submit">Dersleri Ekle</button>
+      <a class="btn btn-outline-secondary" href="/manager/courses/">Geri</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

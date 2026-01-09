@@ -1,0 +1,288 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{{ course.title }}{% endblock %}
+{% block page_title %}{{ course.title }}{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="card card-primary">
+      <div class="card-header">
+        <h3 class="card-title">{{ course.title }}</h3>
+      </div>
+      <div class="card-body">
+        <p class="mb-0">{{ course.description }}</p>
+
+        {% if request.user.role == "STUDENT" %}
+          <hr>
+
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <small class="text-muted">İlerleme: {{ completed_count }}/{{ total_lessons }}</small>
+              <small class="text-muted ml-2">(%{{ percent }})</small>
+            </div>
+
+            <div class="btn-group">
+              {% if next_lesson %}
+                <a class="btn btn-success btn-sm" href="/lessons/{{ next_lesson.id }}/">
+                  <i class="fas fa-play"></i> Devam Et
+                </a>
+              {% endif %}
+
+              <a class="btn btn-outline-primary btn-sm" href="/messages/course/{{ course.id }}/">
+                <i class="fas fa-comments"></i> Mesaj Panosu
+              </a>
+            </div>
+          </div>
+
+          <div class="progress">
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ percent }}%">
+              %{{ percent }}
+            </div>
+          </div>
+        {% endif %}
+
+        {% if request.user.role == "TEACHER" %}
+          <hr>
+          <a class="btn btn-outline-primary btn-sm" href="/teacher/messages/">
+            <i class="fas fa-comments"></i> Mesajlar
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SINAVLAR + CANLI DERSLER -->
+<div class="row">
+  <!-- SINAVLAR -->
+  <div class="col-lg-6">
+    <div class="card card-outline card-info">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0"><i class="fas fa-clipboard-list"></i> Sınavlar</h3>
+
+        {% if request.user.role == "TEACHER" or request.user.role == "ADMIN" %}
+          <a class="btn btn-sm btn-success" href="/teacher/course/{{ course.id }}/exam/new/">
+            <i class="fas fa-plus"></i> Sınav oluştur
+          </a>
+        {% endif %}
+      </div>
+
+      <div class="card-body">
+        <ul class="list-group">
+          {% for e in course.exams.all %}
+            {% if e.is_active %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <b>{{ e.title }}</b>
+                  <div class="text-muted small">{{ e.duration_minutes }} dk</div>
+                </div>
+
+                <div class="btn-group">
+                  {% if request.user.role == "TEACHER" or request.user.role == "ADMIN" %}
+                    <a class="btn btn-sm btn-warning" href="/teacher/exam/{{ e.id }}/question/new/">
+                      <i class="fas fa-plus"></i> Soru ekle
+                    </a>
+
+                    <a class="btn btn-sm btn-outline-primary" href="/teacher/exam/{{ e.id }}/results/">
+                      <i class="fas fa-chart-bar"></i> Sonuçlar
+                    </a>
+                  {% endif %}
+
+                  {% if request.user.role == "STUDENT" %}
+                    <a class="btn btn-sm btn-primary" href="/exams/{{ e.id }}/start/">
+                      <i class="fas fa-play"></i> Sınava gir
+                    </a>
+                  {% endif %}
+                </div>
+              </li>
+            {% endif %}
+          {% empty %}
+            <li class="list-group-item">Sınav yok</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- CANLI DERSLER -->
+  <div class="col-lg-6">
+    <div class="card card-outline card-success">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0"><i class="fas fa-video"></i> Canlı Dersler</h3>
+
+        {% if request.user.role == "TEACHER" or request.user.role == "ADMIN" %}
+          <a class="btn btn-sm btn-success" href="/teacher/course/{{ course.id }}/live/new/">
+            <i class="fas fa-plus"></i> Canlı ders oluştur
+          </a>
+        {% endif %}
+      </div>
+
+      <div class="card-body">
+        <ul class="list-group">
+          {% for l in course.live_lessons.all %}
+            <li class="list-group-item">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <b>{{ l.title }}</b>
+                  <div class="text-muted small">
+                    <i class="far fa-clock"></i> {{ l.start_time }} • {{ l.duration_minutes }} dk
+                  </div>
+                </div>
+                <a class="btn btn-sm btn-primary" href="{{ l.meet_link }}" target="_blank">
+                  <i class="fas fa-external-link-alt"></i> Meet’e katıl
+                </a>
+              </div>
+            </li>
+          {% empty %}
+            <li class="list-group-item">Canlı ders yok</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DERSLER -->
+<div class="row">
+  <div class="col-12">
+    <div class="card card-outline card-secondary">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0"><i class="fas fa-book"></i> Dersler</h3>
+
+        {% if request.user.role == "TEACHER" or request.user.role == "ADMIN" %}
+          <a class="btn btn-sm btn-outline-info" href="/teacher/course/{{ course.id }}/add-ready-lessons/">
+            <i class="fas fa-layer-group"></i> Hazır Ders Ekle
+          </a>
+        {% endif %}
+      </div>
+
+      <div class="card-body">
+
+        {% if request.user.role == "TEACHER" or request.user.role == "ADMIN" %}
+          <!-- ✅ Sıralama Kaydet formu (tek form, nested yok) -->
+          <form method="post" action="/teacher/course/{{ course.id }}/lessons/reorder/">
+            {% csrf_token %}
+        {% endif %}
+
+        {% for lesson in lessons %}
+          <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <div>
+                {% if lesson.title|slice:":1" == "—" %}
+                  <span class="text-muted ml-3"><b>{{ lesson.order }}.</b></span>
+                  <a class="ml-2 text-muted" href="/lessons/{{ lesson.id }}/">{{ lesson.title }}</a>
+                {% else %}
+                  <b>{{ lesson.order }}.</b>
+                  <a href="/lessons/{{ lesson.id }}/">{{ lesson.title }}</a>
+                {% endif %}
+
+                {% if request.user.role == "STUDENT" and lesson.id in completed_ids %}
+                  <span class="badge badge-success ml-2"><i class="fas fa-check"></i></span>
+                {% endif %}
+              </div>
+
+              {% if request.user.role == "TEACHER" or request.user.role == "ADMIN" %}
+                <div class="d-flex align-items-center" style="gap:6px; flex-wrap:wrap;">
+                  <!-- order input (reorder formunun parçası) -->
+                  <input type="number"
+                         name="order_{{ lesson.id }}"
+                         value="{{ lesson.order }}"
+                         class="form-control form-control-sm"
+                         style="width:90px;"
+                         title="Sıra">
+
+                  <a class="btn btn-sm btn-outline-warning" href="/teacher/lesson/{{ lesson.id }}/edit/">
+                    <i class="fas fa-edit"></i> Düzenle
+                  </a>
+
+                  <!-- Sil: nested form yok, JS ile POST -->
+                  <button type="button"
+                          class="btn btn-sm btn-outline-danger"
+                          onclick="confirmDelete('{{ lesson.id }}')">
+                    <i class="fas fa-trash"></i> Sil
+                  </button>
+
+                  <a class="btn btn-sm btn-outline-primary" href="/teacher/lesson/{{ lesson.id }}/file/new/">
+                    <i class="fas fa-file-upload"></i> Dosya
+                  </a>
+                  <a class="btn btn-sm btn-outline-primary" href="/teacher/lesson/{{ lesson.id }}/video/new/">
+                    <i class="fas fa-upload"></i> Video
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="card-body">
+              {% if lesson.body %}
+                <p>{{ lesson.body }}</p>
+              {% endif %}
+
+              <div class="row">
+                <div class="col-md-6">
+                  <h5 class="mb-2"><i class="far fa-file"></i> Dosyalar</h5>
+                  <ul class="list-group">
+                    {% for f in lesson.files.all %}
+                      <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{% if f.title %}{{ f.title }}{% else %}Dosya{% endif %}</span>
+                        <a class="btn btn-sm btn-primary" href="{{ f.file.url }}" target="_blank">Aç / İndir</a>
+                      </li>
+                    {% empty %}
+                      <li class="list-group-item">Dosya yok</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+
+                <div class="col-md-6 mt-3 mt-md-0">
+                  <h5 class="mb-2"><i class="fas fa-film"></i> Videolar</h5>
+                  <ul class="list-group">
+                    {% for v in lesson.videos.all %}
+                      <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{% if v.title %}{{ v.title }}{% else %}Video{% endif %}</span>
+                        <a class="btn btn-sm btn-primary" href="{{ v.video.url }}" target="_blank">Aç / İndir</a>
+                      </li>
+                    {% empty %}
+                      <li class="list-group-item">Video yok</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        {% empty %}
+          <p>Bu kursta henüz ders yok.</p>
+        {% endfor %}
+
+        {% if request.user.role == "TEACHER" or request.user.role == "ADMIN" %}
+            <div class="mt-3">
+              <button class="btn btn-success" type="submit">
+                <i class="fas fa-sort-numeric-down"></i> Sıralamayı Kaydet
+              </button>
+            </div>
+          </form>
+
+          <!-- Silme için gizli POST formu -->
+          <form id="deleteForm" method="post" style="display:none;">
+            {% csrf_token %}
+          </form>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete(lessonId){
+  if(!confirm("Bu ders silinsin mi?")) return;
+  const f = document.getElementById("deleteForm");
+  f.action = "/teacher/lesson/" + lessonId + "/delete/";
+  f.submit();
+}
+</script>
+{% endblock %}

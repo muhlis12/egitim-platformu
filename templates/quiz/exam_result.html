@@ -1,0 +1,69 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Sınav Sonucu{% endblock %}
+{% block page_title %}Sınav Sonucu{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="card card-outline card-primary">
+      <div class="card-header">
+        <h3 class="card-title mb-0">
+          <i class="fas fa-chart-bar"></i> {{ attempt.exam.title }}
+        </h3>
+      </div>
+
+      <div class="card-body">
+        <p><b>Kurs:</b> {{ attempt.exam.course.title }}</p>
+
+        <div class="row">
+          <div class="col-md-4">
+            <div class="small-box bg-info">
+              <div class="inner">
+                <h3>{{ attempt.score }}</h3>
+                <p>Puan</p>
+              </div>
+              <div class="icon"><i class="fas fa-star"></i></div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="small-box bg-success">
+              <div class="inner">
+                <h3>{{ attempt.correct_count }}</h3>
+                <p>Doğru</p>
+              </div>
+              <div class="icon"><i class="fas fa-check"></i></div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="small-box bg-danger">
+              <div class="inner">
+                <h3>{{ attempt.wrong_count }}</h3>
+                <p>Yanlış</p>
+              </div>
+              <div class="icon"><i class="fas fa-times"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="d-flex justify-content-between">
+          <a class="btn btn-outline-secondary" href="/courses/{{ attempt.exam.course.id }}/">
+            <i class="fas fa-arrow-left"></i> Kursa dön
+          </a>
+
+          <a class="btn btn-primary" href="/dashboard/">
+            <i class="fas fa-home"></i> Dashboard
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,236 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Mesaj Panosu{% endblock %}
+{% block page_title %}{{ course.title }} - Mesaj Panosu{% endblock %}
+
+{% block extra_css %}
+<style>
+.chat-box{
+  max-height:65vh;
+  overflow-y:auto;
+  padding:12px;
+  background:#f4f6f9;
+  border-radius:6px;
+}
+.msg-row{display:flex;width:100%;margin-bottom:6px;}
+.msg-left{justify-content:flex-start;}
+.msg-right{justify-content:flex-end;}
+
+.bubble{
+  position:relative;
+  display:inline-block;
+  max-width:85%;
+  padding:6px 10px;
+  border-radius:14px;
+  line-height:1.2;
+  font-size:14px;
+}
+.bubble .text{
+  margin:0;
+  padding:0;
+  line-height:1.2;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  white-space:pre-wrap;
+}
+
+.bubble-left{
+  background:#ffffff;
+  border:1px solid #e5e7eb;
+  border-top-left-radius:4px;
+}
+.bubble-right{
+  background:#dbeafe;
+  border:1px solid #93c5fd;
+  border-top-right-radius:4px;
+}
+
+.meta{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:11px;
+  color:#6b7280;
+  margin-top:3px;
+}
+.sender{font-weight:600;}
+
+.bubble form.delete-form{
+  position:absolute;top:2px;right:6px;
+  opacity:0;transition:.15s;
+}
+.bubble:hover form.delete-form{opacity:1;}
+.bubble form.delete-form button{
+  background:none;border:none;padding:0;font-size:12px;
+}
+
+textarea.form-control{resize:none;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card card-outline card-primary">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title mb-0"><i class="fas fa-comments"></i> Mesajlar</h3>
+
+    <div class="d-flex align-items-center" style="gap:10px;">
+      <!-- Arama -->
+      <form method="get" class="d-none d-md-block" style="max-width:320px;">
+        <div class="input-group input-group-sm">
+          <input class="form-control" name="q" value="{{ q }}" placeholder="Mesaj ara...">
+          <div class="input-group-append">
+            <button class="btn btn-outline-secondary"><i class="fas fa-search"></i></button>
+          </div>
+        </div>
+      </form>
+
+      <a class="btn btn-sm btn-outline-secondary" href="/courses/{{ course.id }}/">Kursa dön</a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div id="chatBox" class="chat-box">
+      {% for m in msgs %}
+        {% if m.sender_id == request.user.id %}
+          <div class="msg-row msg-right">
+            <div class="bubble bubble-right">
+
+              {% if m.is_deleted %}
+                <div class="text text-muted"><i class="fas fa-ban"></i> Bu mesaj silindi.</div>
+              {% else %}
+                <div class="text">{{ m.text }}</div>
+              {% endif %}
+
+              {% if not m.is_deleted and m.file %}
+                {% with fname=m.file.name|lower %}
+                  {% if fname|slice:"-4:" == ".png" or fname|slice:"-4:" == ".jpg" or fname|slice:"-5:" == ".jpeg" or fname|slice:"-4:" == ".gif" or fname|slice:"-5:" == ".webp" %}
+                    <div class="mt-2">
+                      <a href="{{ m.file.url }}" target="_blank">
+                        <img src="{{ m.file.url }}" alt="ek" style="max-width:260px;border-radius:8px;border:1px solid #e5e7eb;">
+                      </a>
+                    </div>
+                  {% else %}
+                    <div class="mt-2">
+                      <a href="{{ m.file.url }}" target="_blank">
+                        <i class="fas fa-file"></i> {{ m.file.name|cut:"message_files/" }}
+                      </a>
+                    </div>
+                  {% endif %}
+                {% endwith %}
+              {% endif %}
+
+              {% if not m.is_deleted %}
+                <form class="delete-form" method="post" action="{% url 'delete_message' m.id %}"
+                      onsubmit="return confirm('Bu mesaj silinsin mi?')">
+                  {% csrf_token %}
+                  <button class="text-danger"><i class="fas fa-trash"></i></button>
+                </form>
+              {% endif %}
+
+              <div class="meta">
+                <span class="sender">Sen</span>
+                <span>
+                  {{ m.created_at|date:"d.m.Y H:i" }}
+                  {% if m.read_by_teacher %} ✔✔ {% else %} ✔ {% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+
+        {% else %}
+          <div class="msg-row msg-left">
+            <div class="bubble bubble-left">
+
+              {% if m.is_deleted %}
+                <div class="text text-muted"><i class="fas fa-ban"></i> Bu mesaj silindi.</div>
+              {% else %}
+                <div class="text">{{ m.text }}</div>
+              {% endif %}
+
+              {% if not m.is_deleted and m.file %}
+                {% with fname=m.file.name|lower %}
+                  {% if fname|slice:"-4:" == ".png" or fname|slice:"-4:" == ".jpg" or fname|slice:"-5:" == ".jpeg" or fname|slice:"-4:" == ".gif" or fname|slice:"-5:" == ".webp" %}
+                    <div class="mt-2">
+                      <a href="{{ m.file.url }}" target="_blank">
+                        <img src="{{ m.file.url }}" alt="ek" style="max-width:260px;border-radius:8px;border:1px solid #e5e7eb;">
+                      </a>
+                    </div>
+                  {% else %}
+                    <div class="mt-2">
+                      <a href="{{ m.file.url }}" target="_blank">
+                        <i class="fas fa-file"></i> {{ m.file.name|cut:"message_files/" }}
+                      </a>
+                    </div>
+                  {% endif %}
+                {% endwith %}
+              {% endif %}
+
+              <div class="meta">
+                <span class="sender">{{ m.sender.username }}</span>
+                <span>{{ m.created_at|date:"d.m.Y H:i" }}</span>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      {% empty %}
+        <p class="text-muted">Henüz mesaj yok.</p>
+      {% endfor %}
+    </div>
+
+    <!-- Mobil arama -->
+    <form method="get" class="mt-2 d-md-none">
+      <div class="input-group input-group-sm">
+        <input class="form-control" name="q" value="{{ q }}" placeholder="Mesaj ara...">
+        <div class="input-group-append">
+          <button class="btn btn-outline-secondary"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Mesaj gönder -->
+    <form method="post" class="mt-3" id="msgForm" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="input-group">
+        <textarea id="msgInput" name="text" class="form-control" rows="2"
+                  placeholder="Mesaj yaz... (Enter=Gönder, Shift+Enter=Alt satır)"></textarea>
+
+        <div class="input-group-append">
+          <label class="btn btn-outline-secondary mb-0" title="Dosya/Görsel">
+            <i class="fas fa-paperclip"></i>
+            <input type="file" name="file" style="display:none;"
+                   accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip">
+          </label>
+          <button class="btn btn-primary" type="submit">
+            <i class="fas fa-paper-plane"></i> Gönder
+          </button>
+        </div>
+      </div>
+
+      <small class="text-muted d-block mt-1">
+        Öğretmen çevrimdışıysa mesaj WhatsApp ile bildirilir (izin açıksa).
+      </small>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const box = document.getElementById("chatBox");
+  const input = document.getElementById("msgInput");
+  const form = document.getElementById("msgForm");
+  if(box) box.scrollTop = box.scrollHeight;
+
+  if(input && form){
+    input.addEventListener("keydown", function(e){
+      if(e.key === "Enter" && !e.shiftKey){
+        e.preventDefault();
+        form.submit();
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

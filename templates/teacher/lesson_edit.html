@@ -1,0 +1,46 @@
+{% extends "layout/base.html" %}
+{% block title %}Ders Düzenle{% endblock %}
+{% block page_title %}Ders Düzenle{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-8 col-md-10">
+    <div class="card card-outline card-warning">
+      <div class="card-header">
+        <h3 class="card-title mb-0">
+          <i class="fas fa-edit"></i> {{ lesson.title }}
+        </h3>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="card-body">
+          <div class="form-group">
+            <label>Başlık</label>
+            {{ form.title }}
+          </div>
+
+          <div class="form-group">
+            <label>Açıklama</label>
+            {{ form.body }}
+          </div>
+
+          <div class="form-group">
+            <label>Sıra</label>
+            {{ form.order }}
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-between">
+          <a class="btn btn-outline-secondary" href="/courses/{{ course.id }}/">
+            <i class="fas fa-arrow-left"></i> Kursa dön
+          </a>
+          <button class="btn btn-warning">
+            <i class="fas fa-save"></i> Kaydet
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "layout/base.html" %}
+{% block title %}İlerleme Raporu{% endblock %}
+{% block page_title %}{{ course.title }} - İlerleme Raporu{% endblock %}
+
+{% block content %}
+
+<div class="card card-outline card-primary">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title mb-0"><i class="fas fa-chart-line"></i> Öğrenci İlerleme</h3>
+
+    <div class="btn-group">
+      <a class="btn btn-sm btn-outline-secondary" href="/courses/{{ course.id }}/">
+        <i class="fas fa-arrow-left"></i> Kursa dön
+      </a>
+
+      <a class="btn btn-sm btn-success" href="?export=csv{% if q %}&q={{ q|urlencode }}{% endif %}{% if only_low %}&low=1{% endif %}">
+        <i class="fas fa-file-csv"></i> CSV
+      </a>
+
+      {% if only_low %}
+        <a class="btn btn-sm btn-outline-primary" href="/teacher/course/{{ course.id }}/progress/">
+          Filtreyi kaldır
+        </a>
+      {% else %}
+        <a class="btn btn-sm btn-outline-danger" href="/teacher/course/{{ course.id }}/progress/?low=1">
+          %50 altı
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card-body">
+
+    <!-- Filtre -->
+    <form method="get" class="mb-3">
+      <div class="form-row align-items-end">
+        <div class="col-md-5">
+          <label>Öğrenci ara (username / ad / soyad)</label>
+          <input type="text" class="form-control" name="q" value="{{ q }}" placeholder="örn: hasan">
+        </div>
+
+        <div class="col-md-3">
+          <div class="custom-control custom-checkbox mt-4">
+            <input type="checkbox" class="custom-control-input" id="lowOnly" name="low" value="1" {% if only_low %}checked{% endif %}>
+            <label class="custom-control-label" for="lowOnly">%50 altı</label>
+          </div>
+        </div>
+
+        <div class="col-md-4 text-right mt-3 mt-md-0">
+          <button class="btn btn-primary" type="submit">
+            <i class="fas fa-search"></i> Filtrele
+          </button>
+          <a class="btn btn-outline-secondary" href="/teacher/course/{{ course.id }}/progress/">
+            Temizle
+          </a>
+        </div>
+      </div>
+    </form>
+
+    <!-- Özet Kutular -->
+    <div class="row">
+      <div class="col-md-4">
+        <div class="small-box bg-info">
+          <div class="inner">
+            <h3>{{ rows|length }}</h3>
+            <p>Listelenen Öğrenci</p>
+          </div>
+          <div class="icon"><i class="fas fa-users"></i></div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="small-box bg-success">
+          <div class="inner">
+            <h3>{{ total_lessons }}</h3>
+            <p>Toplam Ders</p>
+          </div>
+          <div class="icon"><i class="fas fa-book"></i></div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="small-box bg-warning">
+          <div class="inner">
+            <h3>{{ avg_percent|default:"0" }}</h3>
+            <p>Ortalama İlerleme (%)</p>
+          </div>
+          <div class="icon"><i class="fas fa-chart-pie"></i></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>Öğrenci</th>
+          <th>Tamamlanan</th>
+          <th style="min-width:260px;">İlerleme</th>
+          <th>Son Tamamlama</th>
+          <th>Detay</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td><b>{{ r.user.username }}</b></td>
+            <td>{{ r.done }}/{{ r.total }}</td>
+
+            <td>
+              <div class="d-flex justify-content-between">
+                <small class="text-muted">%{{ r.percent }}</small>
+                <small class="text-muted">{{ r.done }}/{{ r.total }}</small>
+              </div>
+              <div class="progress">
+                <div class="progress-bar bg-success" style="width: {{ r.percent }}%"></div>
+              </div>
+            </td>
+
+            <td>
+              {% if r.last_done %}
+                {{ r.last_done|date:"d.m.Y H:i" }}
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+
+            <td>
+              <a class="btn btn-sm btn-outline-primary" href="/teacher/course/{{ course.id }}/progress/{{ r.user.id }}/">
+                <i class="fas fa-eye"></i> Detay
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-muted text-center">Öğrenci yok.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

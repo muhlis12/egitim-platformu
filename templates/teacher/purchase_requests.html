@@ -1,0 +1,53 @@
+{% extends "layout/base.html" %}
+{% block title %}Ödeme Talepleri{% endblock %}
+{% block page_title %}{{ course.title }} - Ödeme Talepleri{% endblock %}
+
+{% block content %}
+<div class="card card-outline card-primary">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title mb-0"><i class="fas fa-money-bill"></i> Talepler</h3>
+    <a class="btn btn-sm btn-outline-secondary" href="/courses/{{ course.id }}/">Kursa dön</a>
+  </div>
+
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>Öğrenci</th>
+          <th>Durum</th>
+          <th>Tarih</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pr in items %}
+          <tr>
+            <td><b>{{ pr.user.username }}</b></td>
+            <td>
+              {% if pr.status == "PENDING" %}
+                <span class="badge badge-warning">Beklemede</span>
+              {% elif pr.status == "APPROVED" %}
+                <span class="badge badge-success">Onaylandı</span>
+              {% else %}
+                <span class="badge badge-danger">Reddedildi</span>
+              {% endif %}
+            </td>
+            <td>{{ pr.created_at }}</td>
+            <td>
+              {% if pr.status != "APPROVED" %}
+                <a class="btn btn-sm btn-success" href="/teacher/payments/{{ pr.id }}/approve/">
+                  Onayla
+                </a>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-muted">Talep yok.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

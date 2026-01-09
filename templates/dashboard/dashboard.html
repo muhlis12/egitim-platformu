@@ -1,0 +1,62 @@
+{% extends "layout/base.html" %}
+{% load dashboard_extras %}
+
+{% block title %}Anasayfa{% endblock %}
+{% block page_title %}Anasayfa{% endblock %}
+
+{% block content %}
+
+<div class="card card-outline card-primary">
+  <div class="card-header">
+    <h3 class="card-title mb-0">Kurslarım</h3>
+  </div>
+
+  <div class="card-body">
+    <div class="row">
+      {% for c in courses %}
+        <div class="col-md-6 col-lg-4">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="mb-2"><b>{{ c.title }}</b></h5>
+
+              {% if request.user.role == "STUDENT" %}
+                {% with p=progress_by_course|get_item:c.id %}
+                  <div class="d-flex justify-content-between">
+                    <small class="text-muted">Tamamlanan: {{ p.done|default:0 }}/{{ p.total|default:0 }}</small>
+                    <small class="text-muted">%{{ p.percent|default:0 }}</small>
+                  </div>
+
+                  <div class="progress mb-2">
+                    <div class="progress-bar bg-success" style="width: {{ p.percent|default:0 }}%">
+                      %{{ p.percent|default:0 }}
+                    </div>
+                  </div>
+
+                  <small class="text-muted d-block mb-2">
+                    Kalan ders: {{ p.remaining|default:0 }}
+                  </small>
+                {% endwith %}
+
+                {% with next=continue_lesson_by_course|get_item:c.id %}
+                  {% if next %}
+                    <a class="btn btn-success btn-sm" href="/lessons/{{ next.id }}/">
+                      <i class="fas fa-play"></i> Devam Et
+                    </a>
+                  {% endif %}
+                {% endwith %}
+              {% endif %}
+
+              <a class="btn btn-primary btn-sm ml-1" href="/courses/{{ c.id }}/">
+                <i class="fas fa-eye"></i> Kursa Git
+              </a>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-12 text-muted">Henüz kurs yok.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

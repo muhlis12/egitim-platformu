@@ -1,0 +1,74 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Deneme Detayı{% endblock %}
+{% block page_title %}Deneme Detayı{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="card card-outline card-secondary">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">
+          <i class="fas fa-user"></i> {{ attempt.user.username }}
+          <span class="text-muted">/ {{ exam.title }}</span>
+        </h3>
+        <a class="btn btn-sm btn-outline-secondary" href="/teacher/exam/{{ exam.id }}/results/">
+          <i class="fas fa-arrow-left"></i> Sonuçlara dön
+        </a>
+      </div>
+
+      <div class="card-body">
+        <p class="mb-1"><b>Puan:</b> {{ attempt.score }} | <b>Doğru:</b> {{ attempt.correct_count }} | <b>Yanlış:</b> {{ attempt.wrong_count }}</p>
+        <p class="mb-0 text-muted"><b>Başlangıç:</b> {{ attempt.started_at }} | <b>Bitiş:</b> {{ attempt.finished_at|default:"Devam ediyor" }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    {% for ans in answers %}
+      <div class="card">
+        <div class="card-header">
+          <b>{{ forloop.counter }}.</b> {{ ans.question.text }}
+          <span class="float-right">
+            Doğru: <span class="badge badge-success">{{ ans.question.correct }}</span>
+            Seçilen:
+            {% if ans.selected %}
+              <span class="badge {% if ans.selected == ans.question.correct %}badge-success{% else %}badge-danger{% endif %}">
+                {{ ans.selected }}
+              </span>
+            {% else %}
+              <span class="badge badge-secondary">Boş</span>
+            {% endif %}
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p class="{% if ans.question.correct == 'A' %}text-success font-weight-bold{% endif %}">
+                A) {{ ans.question.choice_a }}
+              </p>
+              <p class="{% if ans.question.correct == 'B' %}text-success font-weight-bold{% endif %}">
+                B) {{ ans.question.choice_b }}
+              </p>
+            </div>
+            <div class="col-md-6">
+              <p class="{% if ans.question.correct == 'C' %}text-success font-weight-bold{% endif %}">
+                C) {{ ans.question.choice_c }}
+              </p>
+              <p class="{% if ans.question.correct == 'D' %}text-success font-weight-bold{% endif %}">
+                D) {{ ans.question.choice_d }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="alert alert-info">Cevap kaydı yok.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

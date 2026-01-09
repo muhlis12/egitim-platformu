@@ -1,0 +1,146 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{{ attempt.exam.title }}{% endblock %}
+{% block page_title %}{{ attempt.exam.title }}{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="card card-outline card-info">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">
+          <i class="fas fa-clipboard-list"></i> {{ attempt.exam.title }}
+        </h3>
+
+        <!-- TIMER -->
+        <div class="text-danger font-weight-bold">
+          <i class="fas fa-clock"></i>
+          Kalan: <span id="timer">--:--</span>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <p class="mb-0">
+          <b>Kurs:</b> {{ attempt.exam.course.title }}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="row">
+    <div class="col-12">
+      {% for a in answers %}
+        <div class="card">
+          <div class="card-header">
+            <b>{{ forloop.counter }}.</b> {{ a.question.text }}
+          </div>
+
+          <div class="card-body">
+            <div class="custom-control custom-radio mb-2">
+              <input class="custom-control-input" type="radio"
+                     id="q{{ a.question.id }}A"
+                     name="q_{{ a.question.id }}" value="A"
+                     {% if a.selected == "A" %}checked{% endif %}>
+              <label class="custom-control-label" for="q{{ a.question.id }}A">
+                <b>A)</b> {{ a.question.choice_a }}
+              </label>
+            </div>
+
+            <div class="custom-control custom-radio mb-2">
+              <input class="custom-control-input" type="radio"
+                     id="q{{ a.question.id }}B"
+                     name="q_{{ a.question.id }}" value="B"
+                     {% if a.selected == "B" %}checked{% endif %}>
+              <label class="custom-control-label" for="q{{ a.question.id }}B">
+                <b>B)</b> {{ a.question.choice_b }}
+              </label>
+            </div>
+
+            <div class="custom-control custom-radio mb-2">
+              <input class="custom-control-input" type="radio"
+                     id="q{{ a.question.id }}C"
+                     name="q_{{ a.question.id }}" value="C"
+                     {% if a.selected == "C" %}checked{% endif %}>
+              <label class="custom-control-label" for="q{{ a.question.id }}C">
+                <b>C)</b> {{ a.question.choice_c }}
+              </label>
+            </div>
+
+            <div class="custom-control custom-radio">
+              <input class="custom-control-input" type="radio"
+                     id="q{{ a.question.id }}D"
+                     name="q_{{ a.question.id }}" value="D"
+                     {% if a.selected == "D" %}checked{% endif %}>
+              <label class="custom-control-label" for="q{{ a.question.id }}D">
+                <b>D)</b> {{ a.question.choice_d }}
+              </label>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="card card-outline card-success">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <a class="btn btn-outline-secondary"
+             href="/courses/{{ attempt.exam.course.id }}/">
+            <i class="fas fa-arrow-left"></i> Kursa dön
+          </a>
+
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-check"></i> Sınavı Bitir
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  // Django'dan ISO formatta deadline alıyoruz
+  const deadlineStr = "{{ attempt.deadline_at|date:'c' }}";
+  const timerEl = document.getElementById("timer");
+
+  if (!deadlineStr || !timerEl) return;
+
+  const deadline = new Date(deadlineStr).getTime();
+
+  function pad(n) {
+    return (n < 10 ? "0" : "") + n;
+  }
+
+  function tick() {
+    const now = Date.now();
+    let diff = Math.max(0, deadline - now);
+
+    const totalSec = Math.floor(diff / 1000);
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+
+    timerEl.textContent = pad(min) + ":" + pad(sec);
+
+    if (diff <= 0) {
+      // Süre bitti → otomatik sonucu göster
+      window.location.href = "/attempts/{{ attempt.id }}/finish/";
+    } else {
+      setTimeout(tick, 500);
+    }
+  }
+
+  tick();
+})();
+</script>
+{% endblock %}

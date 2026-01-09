@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Yeni Kurs</title></head>
+<body>
+<h2>Yeni Kurs</h2>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Kaydet</button>
+</form>
+<p><a href="/teacher/">Geri</a></p>
+</body></html>

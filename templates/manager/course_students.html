@@ -1,0 +1,48 @@
+{% extends "layout/base.html" %}
+{% block title %}Öğrenciler{% endblock %}
+{% block page_title %}{{ course.title }} - Öğrenciler{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for m in messages %}
+    <div class="alert alert-info">{{ m }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="card card-outline card-primary">
+  <div class="card-header"><h3 class="card-title mb-0">Öğrenci Ekle</h3></div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn btn-success" name="add_student" type="submit">Kursa Ekle</button>
+      <a class="btn btn-outline-secondary" href="/manager/courses/">Geri</a>
+    </form>
+  </div>
+</div>
+
+<div class="card card-outline card-secondary">
+  <div class="card-header"><h3 class="card-title mb-0">Kayıtlı Öğrenciler</h3></div>
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead><tr><th>Öğrenci</th><th>İşlem</th></tr></thead>
+      <tbody>
+        {% for e in enrollments %}
+          <tr>
+            <td>{{ e.user.username }}</td>
+            <td>
+              <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="enrollment_id" value="{{ e.id }}">
+                <button class="btn btn-sm btn-danger" name="remove_student" type="submit">Çıkar</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="2" class="text-muted">Öğrenci yok</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

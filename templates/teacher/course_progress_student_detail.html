@@ -1,0 +1,92 @@
+{% extends "layout/base.html" %}
+{% block title %}Öğrenci Detay{% endblock %}
+{% block page_title %}{{ student.username }} - {{ course.title }}{% endblock %}
+
+{% block content %}
+
+<div class="card card-outline card-primary">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title mb-0">
+      <i class="fas fa-user-graduate"></i> {{ student.username }} - Ders İlerlemesi
+    </h3>
+
+    <div class="btn-group">
+      <a class="btn btn-sm btn-outline-secondary" href="/teacher/course/{{ course.id }}/progress/">
+        <i class="fas fa-arrow-left"></i> Rapor
+      </a>
+      <a class="btn btn-sm btn-outline-secondary" href="/courses/{{ course.id }}/">
+        Kursa Dön
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div>
+        <b>İlerleme:</b> {{ done }}/{{ total }} <span class="text-muted">(%{{ percent }})</span>
+      </div>
+    </div>
+
+    <div class="progress">
+      <div class="progress-bar bg-success" style="width: {{ percent }}%;">%{{ percent }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card card-outline card-secondary">
+  <div class="card-header">
+    <h3 class="card-title mb-0"><i class="fas fa-list"></i> Dersler</h3>
+  </div>
+
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>Ders</th>
+          <th>Durum</th>
+          <th>Tamamlanma</th>
+          <th>Aç</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>
+              {% if r.lesson.title|slice:":1" == "—" %}
+                <span class="text-muted ml-3">{{ r.lesson.order }}. {{ r.lesson.title }}</span>
+              {% else %}
+                <b>{{ r.lesson.order }}.</b> {{ r.lesson.title }}
+              {% endif %}
+            </td>
+
+            <td>
+              {% if r.completed %}
+                <span class="badge badge-success"><i class="fas fa-check"></i> Tamam</span>
+              {% else %}
+                <span class="badge badge-secondary">Bekliyor</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if r.completed_at %}
+                {{ r.completed_at|date:"d.m.Y H:i" }}
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+
+            <td>
+              <a class="btn btn-sm btn-outline-primary" href="/lessons/{{ r.lesson.id }}/">
+                <i class="fas fa-eye"></i> Aç
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-muted text-center">Ders yok.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

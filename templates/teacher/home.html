@@ -1,0 +1,79 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Öğretmen Paneli{% endblock %}
+{% block page_title %}Öğretmen Paneli{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="card card-outline card-primary">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Kurslar</h3>
+
+        {% if request.user.role == "ADMIN" %}
+          <a class="btn btn-sm btn-success" href="/teacher/course/new/">
+            <i class="fas fa-plus"></i> Yeni Kurs
+          </a>
+        {% endif %}
+      </div>
+
+      <div class="card-body">
+        <ul class="list-group">
+          {% for c in courses %}
+            <li class="list-group-item">
+              <div class="d-flex justify-content-between align-items-center flex-wrap">
+
+                <div class="mb-2 mb-md-0">
+                  <b>{{ c.title }}</b>
+                  {% if c.grade %}
+                    <span class="badge badge-info ml-2">{{ c.grade }}. Sınıf</span>
+                  {% endif %}
+                </div>
+
+                <div class="d-flex flex-wrap" style="gap:6px;">
+                  <!-- Teacher/Admin kursu görüntüler -->
+                  <a class="btn btn-sm btn-primary" href="/courses/{{ c.id }}/">
+                    <i class="fas fa-eye"></i> Kursa Git
+                  </a>
+
+                  <!-- ✅ İlerleme Raporu (Teacher + Admin) -->
+                  <a class="btn btn-sm btn-outline-primary" href="/teacher/course/{{ c.id }}/progress/">
+                    <i class="fas fa-chart-line"></i> İlerleme
+                  </a>
+
+                  <!-- Öğrenci listesi (Teacher + Admin) -->
+                  <a class="btn btn-sm btn-secondary" href="/teacher/course/{{ c.id }}/students/">
+                    <i class="fas fa-users"></i> Öğrenciler
+                  </a>
+
+                  <!-- Admin özel işlemler -->
+                  {% if request.user.role == "ADMIN" %}
+                    <a class="btn btn-sm btn-warning" href="/teacher/course/{{ c.id }}/add-ready-lessons/">
+                      <i class="fas fa-layer-group"></i> Hazır Ders Ekle
+                    </a>
+
+                    <a class="btn btn-sm btn-success" href="/teacher/course/{{ c.id }}/payments/">
+                      <i class="fas fa-money-bill"></i> Ödeme Talepleri
+                    </a>
+                  {% endif %}
+                </div>
+
+              </div>
+            </li>
+          {% empty %}
+            <li class="list-group-item text-muted">Henüz kurs yok</li>
+          {% endfor %}
+        </ul>
+
+        {% if request.user.role != "ADMIN" %}
+          <div class="alert alert-info mt-3 mb-0">
+            <b>Bilgi:</b> İçerik eklemek için kursa girip ders sayfasından
+            <b>Dosya Yükle</b> / <b>Video Yükle</b> kullanabilirsin.
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

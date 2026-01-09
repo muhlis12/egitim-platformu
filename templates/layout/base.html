@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Eğitim Platformu{% endblock %}</title>
+
+  <!-- AdminLTE + Bootstrap (CDN) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+      </li>
+
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="/dashboard/" class="nav-link">Anasayfa</a>
+      </li>
+
+      {% if request.user.is_authenticated and request.user.role == "TEACHER" %}
+        <li class="nav-item d-none d-sm-inline-block">
+          <a href="/teacher/" class="nav-link">Öğretmen</a>
+        </li>
+      {% endif %}
+
+      {% if request.user.is_authenticated and request.user.role == "ADMIN" %}
+        <li class="nav-item d-none d-sm-inline-block">
+          <a href="/manager/" class="nav-link">Yönetim</a>
+        </li>
+      {% endif %}
+
+      <!-- ✅ Navbar Mesajlar kısayolu + badge -->
+      {% if request.user.is_authenticated and request.user.role == "TEACHER" %}
+        <li class="nav-item d-none d-sm-inline-block">
+          <a href="/teacher/messages/" class="nav-link">
+            Mesajlar
+            {% if unread_total and unread_total > 0 %}
+              <span class="badge badge-danger ml-1">{{ unread_total }}</span>
+            {% endif %}
+          </a>
+        </li>
+      {% elif request.user.is_authenticated and request.user.role == "STUDENT" %}
+        <li class="nav-item d-none d-sm-inline-block">
+          <a href="/messages/" class="nav-link">
+            Mesajlar
+            {% if unread_total and unread_total > 0 %}
+              <span class="badge badge-danger ml-1">{{ unread_total }}</span>
+            {% endif %}
+          </a>
+        </li>
+      {% endif %}
+    </ul>
+
+    <ul class="navbar-nav ml-auto">
+      {% if request.user.is_authenticated %}
+        <li class="nav-item">
+          <span class="nav-link">
+            <i class="fas fa-user"></i>
+            {{ request.user.username }}
+            (
+            {% if request.user.role == "ADMIN" %}
+              Yönetici
+            {% elif request.user.role == "TEACHER" %}
+              Öğretmen
+            {% else %}
+              Öğrenci
+            {% endif %}
+            )
+          </span>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="/logout/">
+            <i class="fas fa-sign-out-alt"></i> Çıkış
+          </a>
+        </li>
+      {% else %}
+        <li class="nav-item">
+          <a class="nav-link" href="/login/student/">
+            <i class="fas fa-sign-in-alt"></i> Giriş Yap
+          </a>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+
+  <!-- Sidebar -->
+  <aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <a href="/dashboard/" class="brand-link">
+      <span class="brand-text font-weight-light">Eğitim Platformu</span>
+    </a>
+
+    <div class="sidebar">
+      <nav class="mt-2">
+        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+
+          <!-- Anasayfa (Herkes) -->
+          <li class="nav-item">
+            <a href="/dashboard/" class="nav-link">
+              <i class="nav-icon fas fa-home"></i>
+              <p>Anasayfa</p>
+            </a>
+          </li>
+
+          <!-- ✅ Öğrenci Mesajlar + badge -->
+          {% if request.user.is_authenticated and request.user.role == "STUDENT" %}
+            <li class="nav-item">
+              <a href="/messages/" class="nav-link">
+                <i class="nav-icon fas fa-comments"></i>
+                <p>
+                  Mesajlar
+                  {% if unread_total and unread_total > 0 %}
+                    <span class="badge badge-danger right">{{ unread_total }}</span>
+                  {% endif %}
+                </p>
+              </a>
+            </li>
+          {% endif %}
+
+          <!-- Yönetim Paneli (Sadece ADMIN) -->
+          {% if request.user.is_authenticated and request.user.role == "ADMIN" %}
+            <li class="nav-item">
+              <a href="/manager/" class="nav-link">
+                <i class="nav-icon fas fa-user-shield"></i>
+                <p>Yönetim Paneli</p>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a href="/manager/courses/" class="nav-link">
+                <i class="nav-icon fas fa-book"></i>
+                <p>Kurslar Yönetimi</p>
+              </a>
+            </li>
+          {% endif %}
+
+          <!-- Öğretmen Paneli (Sadece TEACHER) -->
+          {% if request.user.is_authenticated and request.user.role == "TEACHER" %}
+            <li class="nav-item">
+              <a href="/teacher/" class="nav-link">
+                <i class="nav-icon fas fa-chalkboard-teacher"></i>
+                <p>Öğretmen Paneli</p>
+              </a>
+            </li>
+
+            <!-- ✅ Öğretmen Mesajlar + badge -->
+            <li class="nav-item">
+              <a href="/teacher/messages/" class="nav-link">
+                <i class="nav-icon fas fa-comments"></i>
+                <p>
+                  Mesajlar
+                  {% if unread_total and unread_total > 0 %}
+                    <span class="badge badge-danger right">{{ unread_total }}</span>
+                  {% endif %}
+                </p>
+              </a>
+            </li>
+          {% endif %}
+
+          <!-- Django Admin (Sadece ADMIN) -->
+          {% if request.user.is_authenticated and request.user.role == "ADMIN" %}
+            <li class="nav-item">
+              <a href="/admin/" class="nav-link" target="_blank">
+                <i class="nav-icon fas fa-cog"></i>
+                <p>Django Admin</p>
+              </a>
+            </li>
+          {% endif %}
+
+        </ul>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="content-wrapper">
+    <section class="content-header">
+      <div class="container-fluid">
+        <h1 class="m-0">{% block page_title %}{% endblock %}</h1>
+      </div>
+    </section>
+
+    <section class="content">
+      <div class="container-fluid">
+        {% block content %}{% endblock %}
+      </div>
+    </section>
+  </div>
+
+  <footer class="main-footer">
+    <strong>© {{ now|date:"Y" }} Eğitim Platformu</strong>
+  </footer>
+
+</div>
+
+<!-- JS -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

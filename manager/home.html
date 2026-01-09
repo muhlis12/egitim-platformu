@@ -1,0 +1,56 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Yönetim Paneli{% endblock %}
+{% block page_title %}Yönetim Paneli{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-3">
+    <div class="small-box bg-info">
+      <div class="inner">
+        <h3>{{ stats.courses }}</h3>
+        <p>Kurs</p>
+      </div>
+      <div class="icon"><i class="fas fa-book"></i></div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="small-box bg-success">
+      <div class="inner">
+        <h3>{{ stats.teachers }}</h3>
+        <p>Öğretmen</p>
+      </div>
+      <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="small-box bg-warning">
+      <div class="inner">
+        <h3>{{ stats.students }}</h3>
+        <p>Öğrenci</p>
+      </div>
+      <div class="icon"><i class="fas fa-user-graduate"></i></div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="small-box bg-secondary">
+      <div class="inner">
+        <h3>{{ stats.enrollments }}</h3>
+        <p>Kayıt (Enrollment)</p>
+      </div>
+      <div class="icon"><i class="fas fa-users"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <p class="mb-2"><b>Hızlı Linkler</b></p>
+    <a class="btn btn-primary" href="/teacher/"><i class="fas fa-chalkboard-teacher"></i> Kurs Yönetimi</a>
+    <a class="btn btn-secondary" href="/admin/" target="_blank"><i class="fas fa-cog"></i> Django Admin</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "layout/base.html" %}
+{% block title %}Öğrenciler{% endblock %}
+{% block page_title %}{{ course.title }} - Öğrenciler{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+
+    <div class="card card-outline card-primary">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">
+          <i class="fas fa-users"></i> Öğrenciler ({{ student_count }})
+        </h3>
+
+        <a class="btn btn-sm btn-outline-secondary" href="/courses/{{ course.id }}/">
+          <i class="fas fa-arrow-left"></i> Kursa dön
+        </a>
+      </div>
+
+      <div class="card-body">
+        {% if can_manage %}
+          <div class="card card-outline card-info">
+            <div class="card-header">
+              <h3 class="card-title mb-0"><i class="fas fa-user-plus"></i> Öğrenci Ekle</h3>
+            </div>
+            <div class="card-body">
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="add_student" value="1">
+                <div class="form-row align-items-end">
+                  <div class="col-md-6">
+                    <label>Öğrenci kullanıcı adı</label>
+                    {{ form.username }}
+                  </div>
+                  <div class="col-md-3">
+                    <button class="btn btn-success">
+                      <i class="fas fa-plus"></i> Kursa Ekle
+                    </button>
+                  </div>
+                </div>
+              </form>
+              <small class="text-muted d-block mt-2">
+                Not: Öğrenci ekleme/çıkarma sadece Yönetici’de açık.
+              </small>
+            </div>
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <b>Bilgi:</b> Bu sayfa öğretmen için <b>görüntüleme</b> modunda. Öğrenci ekleme/çıkarma Yönetici’ye aittir.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+          <thead>
+            <tr>
+              <th>Öğrenci</th>
+              <th>Ders İlerleme</th>
+              <th>Sınav</th>
+              <th>Son Aktivite</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+              <tr>
+                <td><b>{{ r.user.username }}</b></td>
+
+                <td style="min-width:220px;">
+                  <div class="d-flex justify-content-between">
+                    <small class="text-muted">{{ r.done }}/{{ r.total_lessons }}</small>
+                    <small class="text-muted">%{{ r.percent }}</small>
+                  </div>
+                  <div class="progress">
+                    <div class="progress-bar bg-success" style="width: {{ r.percent }}%"></div>
+                  </div>
+                </td>
+
+                <td>
+                  <div><b>{{ r.exam_done }}</b> tamamlanan</div>
+                  <div class="text-muted small">Ort: {{ r.avg_score }}</div>
+                </td>
+
+                <td class="text-muted small">
+                  {% if r.last_exam %}
+                    Son sınav: {{ r.last_exam|date:"d.m.Y H:i" }}<br>
+                  {% endif %}
+                  {% if r.last_done %}
+                    Son ders: {{ r.last_done|date:"d.m.Y H:i" }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+
+                <td style="min-width:280px;">
+                  <div class="btn-group">
+                    <a class="btn btn-sm btn-outline-primary"
+                       href="/teacher/course/{{ course.id }}/progress/{{ r.user.id }}/">
+                      <i class="fas fa-eye"></i> Detay
+                    </a>
+
+                    <a class="btn btn-sm btn-outline-success"
+                       href="/teacher/course/{{ course.id }}/student/{{ r.user.id }}/message/">
+                      <i class="fas fa-comments"></i> Mesaj
+                    </a>
+
+                    {% if can_manage %}
+                      <form method="post" style="display:inline;"
+                            onsubmit="return confirm('Öğrenci kurstan çıkarılsın mı?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="remove_student" value="1">
+                        <input type="hidden" name="enrollment_id" value="{{ r.enrollment.id }}">
+                        <button class="btn btn-sm btn-outline-danger">
+                          <i class="fas fa-user-minus"></i> Çıkar
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-muted text-center">Henüz öğrenci yok.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

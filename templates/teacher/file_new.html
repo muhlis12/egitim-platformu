@@ -1,0 +1,21 @@
+{% extends "layout/base.html" %}
+{% block title %}Dosya Yükle{% endblock %}
+{% block page_title %}{{ lesson.title }} - Dosya Yükle{% endblock %}
+
+{% block content %}
+<div class="card card-outline card-primary">
+  <div class="card-header">
+    <h3 class="card-title mb-0"><i class="fas fa-file-upload"></i> Dosya Yükle</h3>
+  </div>
+
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn btn-success" type="submit"><i class="fas fa-upload"></i> Yükle</button>
+      <a class="btn btn-outline-secondary" href="/lessons/{{ lesson.id }}/">Derse dön</a>
+      <a class="btn btn-outline-secondary" href="/courses/{{ lesson.course.id }}/">Kursa dön</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
