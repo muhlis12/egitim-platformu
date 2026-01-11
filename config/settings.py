@@ -1,5 +1,6 @@
 """
 Django settings for config project.
+Prod + Local uyumlu (Google Cloud VM için hazır)
 """
 
 import os
@@ -11,7 +12,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # -------------------------------------------------
-# ENV / WHATSAPP (Şimdilik sadece ayar okuma, WhatsApp sonra)
+# ENV / WHATSAPP (şimdilik sadece okuma)
 # -------------------------------------------------
 os.environ.setdefault("WHATSAPP_API_VERSION", "v18.0")
 WHATSAPP_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v18.0")
@@ -23,18 +24,21 @@ WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 # -------------------------------------------------
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
-    "django-insecure-b6+okwo2cb&d=70s(mbly3n(iz8vsutowhrvdd0$+1hh3pu85p"
+    "django-insecure-b6+okwo2cb&d=70s(mbly3n(iz8vsutowhrvdd0$+1hh3pu85p",
 )
 
-DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
+# Prod'da default False olsun
+DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+# Hostlar env'den gelsin
+# Örn: DJANGO_ALLOWED_HOSTS="34.52.203.126,egitim.ozceylanturizm.com.tr,localhost,127.0.0.1"
+_allowed_hosts = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
+ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts.split(",") if h.strip()]
 
-# (Localde CSRF sıkıntısı olursa aç)
-CSRF_TRUSTED_ORIGINS = [
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-]
+# CSRF trusted origins env'den (domain kullanacaksan şart)
+# Örn: DJANGO_CSRF_TRUSTED_ORIGINS="https://egitim.ozceylanturizm.com.tr,http://34.52.203.126"
+_csrf = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf.split(",") if o.strip()]
 
 # -------------------------------------------------
 # APPS
@@ -97,7 +101,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
 
-                # ✅ Menüde mesaj unread badge için
+                # Menüde mesaj unread badge için
                 "messaging.context_processors.unread_message_counts",
             ],
         },
@@ -109,12 +113,31 @@ WSGI_APPLICATION = "config.wsgi.application"
 # -------------------------------------------------
 # DATABASE
 # -------------------------------------------------
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+# İstersen ileride Postgres'e geçmek için:
+# DJANGO_DATABASE_URL="postgresql://user:pass@host:5432/dbname"
+DATABASE_URL = os.getenv("DJANGO_DATABASE_URL", "").strip()
+
+if DATABASE_URL:
+    try:
+        import dj_database_url  # pip install dj-database-url
+        DATABASES = {
+            "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=False)
+        }
+    except Exception:
+        # dj_database_url yoksa sqlite fallback
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
 
 # -------------------------------------------------
 # AUTH
@@ -140,17 +163,17 @@ TIME_ZONE = "Europe/Istanbul"
 USE_I18N = True
 USE_TZ = True
 
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
 # -------------------------------------------------
 # STATIC / MEDIA
 # -------------------------------------------------
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # -------------------------------------------------
 # DRF
@@ -163,3 +186,10 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
+# -------------------------------------------------
+# (Opsiyonel) Prod güvenlik başlıkları
+# -------------------------------------------------
+# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True

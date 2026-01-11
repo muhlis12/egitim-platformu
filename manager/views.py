@@ -1,22 +1,3 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from accounts.utils import admin_required
-from courses.models import Course, Enrollment
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
-
-@login_required
-@admin_required
-def manager_home(request):
-    stats = {
-        "courses": Course.objects.count(),
-        "teachers": User.objects.filter(role="TEACHER").count(),
-        "students": User.objects.filter(role="STUDENT").count(),
-        "enrollments": Enrollment.objects.count(),
-    }
-    return render(request, "manager/home.html", {"stats": stats})
-    
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -25,10 +6,10 @@ from django.contrib.auth import get_user_model
 from accounts.utils import admin_required
 from courses.models import Course, Enrollment
 from content.models import Lesson, TopicTemplate
-
 from .forms import CourseCreateForm, AssignTeacherForm, EnrollStudentForm, ReadyLessonsForm
 
 User = get_user_model()
+
 
 @login_required
 @admin_required
@@ -36,22 +17,33 @@ def manager_courses(request):
     courses = Course.objects.all().order_by("-id")
     return render(request, "manager/courses.html", {"courses": courses})
 
+
 @login_required
 @admin_required
 def manager_course_new(request):
     if request.method == "POST":
         form = CourseCreateForm(request.POST)
         if form.is_valid():
-            course = form.save()
-            messages.success(request, "Kurs oluşturuldu.")
+            course = form.save(commit=False)   # ✅ kritik
+            course.owner = request.user        # ✅ NULL olmasın
+            course.save()
+            messages.success(request, "Kurs oluşturuldu. İstersen şimdi öğretmen atayabilirsin.")
             return redirect("manager_courses")
     else:
         form = CourseCreateForm()
+
     return render(request, "manager/course_new.html", {"form": form})
+
+
 
 @login_required
 @admin_required
 def manager_assign_teacher(request, course_id):
+    """
+    Öğretmen atama:
+    - Mevcut yapıda owner alanı öğretmen gibi kullanılıyor.
+    - Bu yüzden teacher seçilince course.owner = teacher yapılır.
+    """
     course = get_object_or_404(Course, id=course_id)
 
     if request.method == "POST":
@@ -66,6 +58,7 @@ def manager_assign_teacher(request, course_id):
         form = AssignTeacherForm()
 
     return render(request, "manager/assign_teacher.html", {"course": course, "form": form})
+
 
 @login_required
 @admin_required
@@ -100,9 +93,16 @@ def manager_course_students(request, course_id):
         "enrollments": enrollments,
     })
 
+
 @login_required
 @admin_required
 def manager_ready_lessons(request, course_id):
+    """
+    Hazır ders ekleme (TopicTemplate -> Lesson):
+    - grade+subject seçilir
+    - üst konular ders, alt konular alt ders gibi eklenir
+    - course.grade güncellenir
+    """
     course = get_object_or_404(Course, id=course_id)
     form = ReadyLessonsForm(request.POST or None)
 
@@ -110,7 +110,6 @@ def manager_ready_lessons(request, course_id):
         grade = form.cleaned_data["grade"]
         subject = form.cleaned_data["subject"]
 
-        # Üst konular
         parents = TopicTemplate.objects.filter(
             grade=grade, subject=subject, parent__isnull=True
         ).order_by("order", "id")

@@ -1,0 +1,104 @@
+{% extends "layout/base.html" %}
+{% block title %}Konu Ağacı{% endblock %}
+{% block page_title %}Konu Ağacı{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-4">
+    <div class="card card-outline card-primary">
+      <div class="card-header">
+        <h3 class="card-title mb-0"><i class="fas fa-sitemap"></i> Seçim</h3>
+      </div>
+      <div class="card-body">
+
+        <div class="form-group">
+          <label>Sınıf</label>
+          <select id="selGrade" class="form-control">
+            {% for g in grades %}
+              <option value="{{ g.number }}">{{ g.number }}. Sınıf</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ders</label>
+          <select id="selSubject" class="form-control">
+            {% for s in subjects %}
+              <option value="{{ s.name }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button id="btnLoad" class="btn btn-primary btn-block">
+          <i class="fas fa-search"></i> Konuları Getir
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card card-outline card-secondary">
+      <div class="card-header">
+        <h3 class="card-title mb-0"><i class="fas fa-list"></i> Konu Listesi</h3>
+      </div>
+      <div class="card-body">
+        <div id="treeArea" class="p-2"></div>
+        <div id="treeEmpty" class="text-muted" style="display:none;">Konu bulunamadı.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function escapeHtml(s){
+  return (s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+
+function renderNode(node, level=0){
+  const pad = level * 16;
+  let html = `
+    <div style="margin-left:${pad}px" class="mb-1">
+      <a href="/topics/${node.id}/" class="text-decoration-none">
+        <i class="fas fa-book-open"></i> ${escapeHtml(node.title)}
+      </a>
+    </div>
+  `;
+  if (node.children && node.children.length){
+    for (const ch of node.children){
+      html += renderNode(ch, level+1);
+    }
+  }
+  return html;
+}
+
+async function loadTree(){
+  const grade = document.getElementById("selGrade").value;
+  const subject = document.getElementById("selSubject").value;
+
+  const url = `/api/topics/tree?grade=${encodeURIComponent(grade)}&subject=${encodeURIComponent(subject)}`;
+  const res = await fetch(url, {credentials:"same-origin"});
+  const data = await res.json();
+
+  const area = document.getElementById("treeArea");
+  const empty = document.getElementById("treeEmpty");
+  area.innerHTML = "";
+  empty.style.display = "none";
+
+  if (!data.ok || !data.data || data.data.length === 0){
+    empty.style.display = "block";
+    return;
+  }
+
+  let html = "";
+  for (const root of data.data){
+    html += renderNode(root, 0);
+  }
+  area.innerHTML = html;
+}
+
+document.getElementById("btnLoad").addEventListener("click", loadTree);
+// sayfa açılınca otomatik yükle
+setTimeout(loadTree, 200);
+</script>
+{% endblock %}

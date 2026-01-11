@@ -1,0 +1,136 @@
+{% extends "layout/base.html" %}
+{% block title %}Bugün Yapacaklarım{% endblock %}
+{% block page_title %}Bugün Yapacaklarım{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card card-outline card-primary">
+      <div class="card-header">
+        <h3 class="card-title mb-0"><i class="fas fa-list-check"></i> Plan</h3>
+      </div>
+      <div class="card-body">
+        <div id="itemsArea" class="mb-2 text-muted">Yükleniyor...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card card-outline card-success">
+      <div class="card-header">
+        <h3 class="card-title mb-0"><i class="fas fa-chart-pie"></i> Durum</h3>
+      </div>
+      <div class="card-body">
+        <div class="mb-2"><b>Tarih:</b> <span id="planDate">-</span></div>
+
+        <div class="mb-2"><b>Tamamlanma:</b> <span id="planPct">0</span>%</div>
+        <div class="progress mb-3">
+          <div id="pctBar" class="progress-bar" role="progressbar" style="width:0%">0%</div>
+        </div>
+
+        <div id="doneBadge"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function getCsrfToken(){
+  const inp = document.querySelector('input[name="csrfmiddlewaretoken"]');
+  return inp ? inp.value : "";
+}
+function escapeHtml(s){
+  return (s||"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;");
+}
+function typeIcon(t){
+  if (t==="review") return "fas fa-repeat";
+  if (t==="topic") return "fas fa-book";
+  if (t==="video") return "fas fa-play-circle";
+  if (t==="test")  return "fas fa-clipboard-check";
+  return "fas fa-star";
+}
+
+async function loadPlan(){
+  const res = await fetch("/api/daily-plan", {credentials:"same-origin"});
+  const j = await res.json();
+
+  if(!j.ok){
+    document.getElementById("itemsArea").innerHTML =
+      `<div class="alert alert-danger">Plan alınamadı: ${escapeHtml(j.error||"Bilinmeyen")}</div>`;
+    return;
+  }
+
+  const plan = j.data;
+  document.getElementById("planDate").textContent = plan.date || "-";
+  setPct(plan.completion_rate || 0);
+
+  const items = plan.items || [];
+  if(items.length === 0){
+    document.getElementById("itemsArea").innerHTML =
+      `<div class="text-muted">Bugün için plan yok.</div>`;
+    return;
+  }
+
+  let html = "";
+  for(const it of items){
+    const btn = it.is_done
+      ? `<span class="badge badge-success">Tamamlandı</span>`
+      : `<button class="btn btn-sm btn-success" onclick="markDone(${it.id})"><i class="fas fa-check"></i> Yaptım</button>`;
+
+    const go = it.topic_id
+      ? `<a class="btn btn-sm btn-outline-primary ml-2" href="/topics/${it.topic_id}/"><i class="fas fa-arrow-right"></i> Aç</a>`
+      : "";
+
+    html += `
+      <div class="d-flex justify-content-between align-items-center p-2 mb-2 border rounded">
+        <div>
+          <i class="${typeIcon(it.type)} mr-2"></i>
+          <b>${escapeHtml(it.title)}</b>
+          ${it.type ? `<span class="badge badge-secondary ml-2">${escapeHtml(it.type)}</span>` : ""}
+        </div>
+        <div>
+          ${btn}
+          ${go}
+        </div>
+      </div>
+    `;
+  }
+  document.getElementById("itemsArea").innerHTML = html;
+}
+
+function setPct(pct){
+  pct = Math.max(0, Math.min(100, parseInt(pct||0)));
+  document.getElementById("planPct").textContent = pct;
+  const bar = document.getElementById("pctBar");
+  bar.style.width = pct + "%";
+  bar.textContent = pct + "%";
+
+  const badge = document.getElementById("doneBadge");
+  badge.innerHTML = (pct===100)
+    ? `<div class="alert alert-success mb-0">✅ Gün tamamlandı! Harikasın.</div>`
+    : `<div class="text-muted">Hadi devam 💪</div>`;
+}
+
+async function markDone(itemId){
+  const csrf = getCsrfToken();
+  const res = await fetch(`/api/daily-plan/item/${itemId}/done`, {
+    method:"POST",
+    credentials:"same-origin",
+    headers: {"Content-Type":"application/json","X-CSRFToken":csrf},
+    body: JSON.stringify({})
+  });
+  const j = await res.json();
+  if(j.ok){
+    setPct(j.data.completion_rate || 0);
+    await loadPlan();
+  }
+}
+
+loadPlan();
+</script>
+{% endblock %}

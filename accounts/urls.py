@@ -3,6 +3,7 @@ from django.contrib.auth import views as auth_views
 from django.views.generic.base import RedirectView
 
 from .views import after_login, gate_student, gate_teacher, gate_admin, logout_get
+from .api import users_search
 
 urlpatterns = [
     # 3 ayrı login ekranı
@@ -52,4 +53,5 @@ urlpatterns = [
     path("password-reset/done/", auth_views.PasswordResetDoneView.as_view(template_name="accounts/password_reset_done.html"), name="password_reset_done"),
     path("reset/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(template_name="accounts/password_reset_confirm.html"), name="password_reset_confirm"),
     path("reset/done/", auth_views.PasswordResetCompleteView.as_view(template_name="accounts/password_reset_complete.html"), name="password_reset_complete"),
+    path("api/v1/users/search", users_search, name="api_users_search"),
 ]

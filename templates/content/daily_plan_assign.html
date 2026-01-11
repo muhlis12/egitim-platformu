@@ -1,0 +1,122 @@
+{% extends "layout/base.html" %}
+{% block title %}Günlük Plan Ata{% endblock %}
+{% block page_title %}Günlük Plan Ata (Öğretmen / Yönetici){% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card card-outline card-warning">
+      <div class="card-header">
+        <h3 class="card-title mb-0">
+          <i class="fas fa-calendar-plus"></i> Görev Ekle
+        </h3>
+      </div>
+      <div class="card-body">
+
+        {% if messages %}
+          {% for m in messages %}
+            <div class="alert alert-{{ m.tags }}">{{ m }}</div>
+          {% endfor %}
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+
+          <!-- ✅ Student dropdown -->
+          <div class="form-group">
+            <label>{{ form.student.label }}</label>
+            {{ form.student }}
+            <small class="text-muted">Öğrenciyi listeden seç.</small>
+          </div>
+
+          <!-- ✅ Date + hızlı butonlar -->
+          <div class="form-group">
+            <label>{{ form.date.label }}</label>
+            {{ form.date }}
+
+            <div class="mt-2">
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="setToday()">
+                Bugün
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="setTomorrow()">
+                Yarın
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>{{ form.type.label }}</label>
+            {{ form.type }}
+          </div>
+
+          <div class="form-group">
+            <label>{{ form.title.label }}</label>
+            {{ form.title }}
+            <small class="text-muted">Konu seçersen başlığı otomatik doldurur.</small>
+          </div>
+
+          <div class="form-group">
+            <label>{{ form.topic.label }}</label>
+            {{ form.topic }}
+            <small class="text-muted">Konu bağlarsan öğrenci “Aç” ile konu sayfasına gider.</small>
+          </div>
+
+          <button class="btn btn-warning btn-block">
+            <i class="fas fa-plus"></i> Görevi Ekle
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card card-outline card-info">
+      <div class="card-header">
+        <h3 class="card-title mb-0"><i class="fas fa-info-circle"></i> Not</h3>
+      </div>
+      <div class="card-body">
+        <ul class="mb-0">
+          <li>Bu ekran öğretmen veya yönetici içindir.</li>
+          <li>Öğrenci görevleri <b>/daily-plan/</b> sayfasında görür.</li>
+          <li>Görev tamamlanınca öğrenci “Yaptım” ile işaretler.</li>
+          <li>“Bugün/Yarın” ile hızlı tarih seçebilirsin.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setToday(){
+  const d = new Date();
+  const el = document.getElementById("id_date");
+  if(el) el.value = d.toISOString().slice(0,10);
+}
+function setTomorrow(){
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const el = document.getElementById("id_date");
+  if(el) el.value = d.toISOString().slice(0,10);
+}
+
+function autoTitle(){
+  const typeEl = document.getElementById("id_type");
+  const topicEl = document.getElementById("id_topic");
+  const titleEl = document.getElementById("id_title");
+  if(!typeEl || !topicEl || !titleEl) return;
+
+  const type = typeEl.value;
+  const topicText = topicEl.options[topicEl.selectedIndex]?.text || "";
+
+  // title boşsa otomatik doldur
+  if(topicText && !titleEl.value){
+    const map = {review:"Tekrar", topic:"Yeni Konu", video:"Video", test:"Mini Test", custom:"Görev"};
+    titleEl.value = `${map[type] || "Görev"}: ${topicText}`;
+  }
+}
+
+document.getElementById("id_topic")?.addEventListener("change", autoTitle);
+document.getElementById("id_type")?.addEventListener("change", autoTitle);
+</script>
+{% endblock %}
