@@ -1,15 +1,11 @@
 from django import forms
-from django.contrib.auth import get_user_model
 from django.utils import timezone
-
-User = get_user_model()
 
 
 class DailyPlanAssignForm(forms.Form):
-    student = forms.ModelChoiceField(
-        queryset=User.objects.none(),
-        label="Öğrenci"
-    )
+    # Select2 AJAX ile seçilecek
+    student_id = forms.IntegerField()
+    topic_id = forms.IntegerField(required=False)
 
     date = forms.DateField(
         label="Tarih",
@@ -35,40 +31,20 @@ class DailyPlanAssignForm(forms.Form):
         help_text="Boş bırakılırsa otomatik doldurulur."
     )
 
-    topic = forms.ModelChoiceField(
-        queryset=None,
-        required=False,
-        label="Konu (opsiyonel)"
-    )
+    def clean_student_id(self):
+        sid = self.cleaned_data["student_id"]
+        if not sid or sid <= 0:
+            raise forms.ValidationError("Öğrenci seçilmedi.")
+        return sid
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # query’leri burada set edelim (import/circular riskini azaltır)
-        self.fields["student"].queryset = User.objects.filter(role="STUDENT").order_by("username")
-
-        from .models import TopicTemplate
-        self.fields["topic"].queryset = TopicTemplate.objects.all().order_by("id")
-
-    def clean(self):
-        cleaned = super().clean()
-        typ = cleaned.get("type")
-        title = (cleaned.get("title") or "").strip()
-        topic = cleaned.get("topic")
-
-        # Başlık boşsa otomatik üret
-        if not title:
-            label_map = {
-                "review": "Tekrar",
-                "topic": "Yeni Konu",
-                "video": "Video",
-                "test": "Mini Test",
-                "custom": "Görev",
-            }
-            base = label_map.get(typ, "Görev")
-            if topic:
-                cleaned["title"] = f"{base}: {topic.title}"
-            else:
-                cleaned["title"] = base
-
-        return cleaned
+    def clean_topic_id(self):
+        tid = self.cleaned_data.get("topic_id")
+        if tid in (None, "", 0):
+            return None
+        try:
+            tid = int(tid)
+        except ValueError:
+            raise forms.ValidationError("Konu id geçersiz.")
+        if tid <= 0:
+            return None
+        return tid

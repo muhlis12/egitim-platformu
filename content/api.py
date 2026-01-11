@@ -361,3 +361,4 @@ def my_stats(request):
         return Response({"ok": True, "data": {"xp": s.xp, "streak": s.streak}})
     except Exception:
         return Response({"ok": True, "data": {"xp": 0, "streak": 0}})
+

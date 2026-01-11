@@ -2,12 +2,19 @@ from django.db import models
 from django.conf import settings
 
 class Notification(models.Model):
+    LEVEL_CHOICES = [
+        ("info", "Info"),
+        ("success", "Success"),
+        ("warning", "Warning"),
+        ("danger", "Danger"),
+    ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
     title = models.CharField(max_length=200)
     body = models.TextField(blank=True)
     url = models.CharField(max_length=255, blank=True)
 
-    level = models.CharField(max_length=20, default="info")  # info/success/warn/danger
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default="info")
     is_read = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)

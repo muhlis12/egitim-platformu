@@ -1,6 +1,6 @@
 """
 Django settings for config project.
-Prod + Local uyumlu (Google Cloud VM için hazır)
+Prod + Local uyumlu (Google Cloud VM + Nginx + Gunicorn için)
 """
 
 import os
@@ -31,14 +31,33 @@ SECRET_KEY = os.getenv(
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 
 # Hostlar env'den gelsin
-# Örn: DJANGO_ALLOWED_HOSTS="34.52.203.126,egitim.ozceylanturizm.com.tr,localhost,127.0.0.1"
-_allowed_hosts = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
+# Örn: DJANGO_ALLOWED_HOSTS="34.52.203.126,egitim.1imzakurs.com,localhost,127.0.0.1"
+_allowed_hosts = os.getenv(
+    "DJANGO_ALLOWED_HOSTS",
+    "127.0.0.1,localhost,0.0.0.0,egitim.1imzakurs.com,34.52.203.126"
+)
 ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts.split(",") if h.strip()]
 
-# CSRF trusted origins env'den (domain kullanacaksan şart)
-# Örn: DJANGO_CSRF_TRUSTED_ORIGINS="https://egitim.ozceylanturizm.com.tr,http://34.52.203.126"
-_csrf = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "")
+# CSRF trusted origins (login POST için kritik)
+# Örn: DJANGO_CSRF_TRUSTED_ORIGINS="https://egitim.1imzakurs.com,http://egitim.1imzakurs.com"
+_csrf = os.getenv(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    "https://egitim.1imzakurs.com,http://egitim.1imzakurs.com"
+)
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf.split(",") if o.strip()]
+
+# Reverse proxy arkasında güvenli HTTPS algısı
+# (Nginx "X-Forwarded-Proto" gönderdiği için)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+
+# HTTPS zorunlu olacaksa ENV ile aç
+# DJANGO_SECURE_SSL_REDIRECT=1
+SECURE_SSL_REDIRECT = os.getenv("DJANGO_SECURE_SSL_REDIRECT", "0") == "1"
+
+# Cookie güvenliği (HTTPS'te anlamlı)
+SESSION_COOKIE_SECURE = os.getenv("DJANGO_SESSION_COOKIE_SECURE", "0") == "1"
+CSRF_COOKIE_SECURE = os.getenv("DJANGO_CSRF_COOKIE_SECURE", "0") == "1"
 
 # -------------------------------------------------
 # APPS
@@ -65,6 +84,7 @@ INSTALLED_APPS = [
     "manager",
     "dashboard",
     "messaging",
+    "notifications",
 ]
 
 # -------------------------------------------------
@@ -100,8 +120,6 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-
-                # Menüde mesaj unread badge için
                 "messaging.context_processors.unread_message_counts",
             ],
         },
@@ -113,22 +131,20 @@ WSGI_APPLICATION = "config.wsgi.application"
 # -------------------------------------------------
 # DATABASE
 # -------------------------------------------------
-# İstersen ileride Postgres'e geçmek için:
-# DJANGO_DATABASE_URL="postgresql://user:pass@host:5432/dbname"
 DATABASE_URL = os.getenv("DJANGO_DATABASE_URL", "").strip()
 
 if DATABASE_URL:
     try:
-        import dj_database_url  # pip install dj-database-url
+        import dj_database_url
         DATABASES = {
             "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=False)
         }
     except Exception:
-        # dj_database_url yoksa sqlite fallback
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.sqlite3",
                 "NAME": BASE_DIR / "db.sqlite3",
+                "OPTIONS": {"timeout": 20},
             }
         }
 else:
@@ -136,6 +152,7 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
+            "OPTIONS": {"timeout": 20},
         }
     }
 
@@ -162,7 +179,6 @@ LANGUAGE_CODE = "tr-tr"
 TIME_ZONE = "Europe/Istanbul"
 USE_I18N = True
 USE_TZ = True
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # -------------------------------------------------
@@ -170,7 +186,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # -------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# WhiteNoise
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    }
+}
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -186,10 +208,3 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
-
-# -------------------------------------------------
-# (Opsiyonel) Prod güvenlik başlıkları
-# -------------------------------------------------
-# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True

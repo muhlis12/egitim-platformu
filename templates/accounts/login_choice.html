@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Giriş Seçimi</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+
+  <style>
+    body { background: #f4f6f9; }
+    .login-wrap { min-height: 100vh; display:flex; align-items:center; }
+    .role-card { cursor:pointer; transition: transform .12s ease, box-shadow .12s ease; }
+    .role-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,.12); }
+    .role-icon { font-size: 34px; opacity: .9; }
+    .role-sub { opacity: .75; }
+  </style>
+</head>
+<body>
+<div class="container login-wrap">
+  <div class="w-100">
+    <div class="text-center mb-4">
+      <h2 class="mb-1"><b>Eğitim Platformu</b></h2>
+      <div class="text-muted">Giriş türünü seç</div>
+    </div>
+
+    <div class="row">
+      <!-- Yönetici -->
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a href="/login/admin/" class="text-dark" style="text-decoration:none;">
+          <div class="card card-outline card-danger role-card">
+            <div class="card-body text-center">
+              <div class="role-icon mb-2"><i class="fas fa-user-shield"></i></div>
+              <h5 class="mb-1"><b>Yönetici Girişi</b></h5>
+              <div class="role-sub">Panel / Yönetim</div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Öğretmen -->
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a href="/login/teacher/" class="text-dark" style="text-decoration:none;">
+          <div class="card card-outline card-warning role-card">
+            <div class="card-body text-center">
+              <div class="role-icon mb-2"><i class="fas fa-chalkboard-teacher"></i></div>
+              <h5 class="mb-1"><b>Öğretmen Girişi</b></h5>
+              <div class="role-sub">Görev / Takip</div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Öğrenci -->
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a href="/login/student/" class="text-dark" style="text-decoration:none;">
+          <div class="card card-outline card-primary role-card">
+            <div class="card-body text-center">
+              <div class="role-icon mb-2"><i class="fas fa-user-graduate"></i></div>
+              <h5 class="mb-1"><b>Öğrenci Girişi</b></h5>
+              <div class="role-sub">Plan / Konular</div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Veli -->
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a href="/login/parent/" class="text-dark" style="text-decoration:none;">
+          <div class="card card-outline card-success role-card">
+            <div class="card-body text-center">
+              <div class="role-icon mb-2"><i class="fas fa-users"></i></div>
+              <h5 class="mb-1"><b>Veli Girişi</b></h5>
+              <div class="role-sub">Takip / Rapor</div>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <div class="text-center mt-3 text-muted">
+      Şifreni unuttuysan: <a href="/password-reset/">Şifre Sıfırla</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+</body>
+</html>

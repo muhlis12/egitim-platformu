@@ -2,14 +2,16 @@
 {% block title %}Günlük Plan Ata{% endblock %}
 {% block page_title %}Günlük Plan Ata (Öğretmen / Yönetici){% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+{% endblock %}
+
 {% block content %}
 <div class="row">
   <div class="col-lg-7">
     <div class="card card-outline card-warning">
       <div class="card-header">
-        <h3 class="card-title mb-0">
-          <i class="fas fa-calendar-plus"></i> Görev Ekle
-        </h3>
+        <h3 class="card-title mb-0"><i class="fas fa-calendar-plus"></i> Görev Ekle</h3>
       </div>
       <div class="card-body">
 
@@ -19,28 +21,40 @@
           {% endfor %}
         {% endif %}
 
-        <form method="post">
+        <form method="post" id="assignForm">
           {% csrf_token %}
 
-          <!-- ✅ Student dropdown -->
+          <!-- Hidden fields (form bunları bekliyor) -->
+          <input type="hidden" id="id_student_id" name="student_id">
+          <input type="hidden" id="id_topic_id" name="topic_id">
+
+          <!-- ✅ Student Select2 AJAX -->
           <div class="form-group">
-            <label>{{ form.student.label }}</label>
-            {{ form.student }}
-            <small class="text-muted">Öğrenciyi listeden seç.</small>
+            <label>Öğrenci</label>
+            <select id="studentSelect" class="form-control"></select>
+            <small class="text-muted">Yazarak ara (AJAX)</small>
           </div>
 
-          <!-- ✅ Date + hızlı butonlar -->
+          <!-- ✅ Topic filtre (pro) -->
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label>Sınıf (opsiyonel)</label>
+              <input id="filterGrade" class="form-control" placeholder="Örn: 8">
+              <small class="text-muted">Boş bırakabilirsin</small>
+            </div>
+            <div class="form-group col-6">
+              <label>Ders (opsiyonel)</label>
+              <input id="filterSubject" class="form-control" placeholder="Örn: Matematik">
+              <small class="text-muted">Boş bırakabilirsin</small>
+            </div>
+          </div>
+
           <div class="form-group">
             <label>{{ form.date.label }}</label>
             {{ form.date }}
-
             <div class="mt-2">
-              <button type="button" class="btn btn-sm btn-outline-primary" onclick="setToday()">
-                Bugün
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-primary" onclick="setTomorrow()">
-                Yarın
-              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="setToday()">Bugün</button>
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="setTomorrow()">Yarın</button>
             </div>
           </div>
 
@@ -52,13 +66,14 @@
           <div class="form-group">
             <label>{{ form.title.label }}</label>
             {{ form.title }}
-            <small class="text-muted">Konu seçersen başlığı otomatik doldurur.</small>
+            <small class="text-muted">Boş bırakabilirsin, otomatik doldurulur.</small>
           </div>
 
+          <!-- ✅ Topic Select2 AJAX -->
           <div class="form-group">
-            <label>{{ form.topic.label }}</label>
-            {{ form.topic }}
-            <small class="text-muted">Konu bağlarsan öğrenci “Aç” ile konu sayfasına gider.</small>
+            <label>Konu (opsiyonel)</label>
+            <select id="topicSelect" class="form-control"></select>
+            <small class="text-muted">Konu seçersen öğrenci “Aç” ile konuya gider.</small>
           </div>
 
           <button class="btn btn-warning btn-block">
@@ -80,43 +95,105 @@
           <li>Bu ekran öğretmen veya yönetici içindir.</li>
           <li>Öğrenci görevleri <b>/daily-plan/</b> sayfasında görür.</li>
           <li>Görev tamamlanınca öğrenci “Yaptım” ile işaretler.</li>
-          <li>“Bugün/Yarın” ile hızlı tarih seçebilirsin.</li>
+          <li>Konu aramasını sınıf/derse göre filtreleyebilirsin.</li>
         </ul>
       </div>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
 function setToday(){
   const d = new Date();
-  const el = document.getElementById("id_date");
-  if(el) el.value = d.toISOString().slice(0,10);
+  document.getElementById("id_date").value = d.toISOString().slice(0,10);
 }
 function setTomorrow(){
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  const el = document.getElementById("id_date");
-  if(el) el.value = d.toISOString().slice(0,10);
+  const d = new Date(); d.setDate(d.getDate()+1);
+  document.getElementById("id_date").value = d.toISOString().slice(0,10);
 }
 
-function autoTitle(){
-  const typeEl = document.getElementById("id_type");
-  const topicEl = document.getElementById("id_topic");
-  const titleEl = document.getElementById("id_title");
-  if(!typeEl || !topicEl || !titleEl) return;
+$(function(){
+  // Student Select2
+  $("#studentSelect").select2({
+    width: "100%",
+    placeholder: "Öğrenci ara...",
+    allowClear: true,
+    minimumInputLength: 1,
+    ajax: {
+      url: "/api/v1/users/search",
+      dataType: "json",
+      delay: 250,
+      data: function (params) {
+        return { q: params.term, role: "STUDENT" };
+      },
+      processResults: function (data) {
+        return data;
+      }
+    }
+  })
+  .on("select2:select", function(e){
+    $("#id_student_id").val(e.params.data.id);
+  })
+  .on("select2:clear", function(){
+    $("#id_student_id").val("");
+  });
 
-  const type = typeEl.value;
-  const topicText = topicEl.options[topicEl.selectedIndex]?.text || "";
+  // Topic Select2
+  $("#topicSelect").select2({
+    width: "100%",
+    placeholder: "Konu ara...",
+    allowClear: true,
+    minimumInputLength: 1,
+    ajax: {
+      url: "/api/v1/topics/search",
+      dataType: "json",
+      delay: 250,
+      data: function (params) {
+        return {
+          q: params.term,
+          grade: $("#filterGrade").val() || "",
+          subject: $("#filterSubject").val() || ""
+        };
+      },
+      processResults: function (data) {
+        return data;
+      }
+    }
+  })
+  .on("select2:select", function(e){
+    $("#id_topic_id").val(e.params.data.id);
 
-  // title boşsa otomatik doldur
-  if(topicText && !titleEl.value){
-    const map = {review:"Tekrar", topic:"Yeni Konu", video:"Video", test:"Mini Test", custom:"Görev"};
-    titleEl.value = `${map[type] || "Görev"}: ${topicText}`;
-  }
-}
+    // title boşsa otomatik doldurma
+    const titleEl = document.getElementById("id_title");
+    const typeEl = document.getElementById("id_type");
+    if(titleEl && typeEl && !titleEl.value){
+      const map = {review:"Tekrar", topic:"Yeni Konu", video:"Video", test:"Mini Test", custom:"Görev"};
+      titleEl.value = `${map[typeEl.value] || "Görev"}: ${e.params.data.text}`;
+    }
+  })
+  .on("select2:clear", function(){
+    $("#id_topic_id").val("");
+  });
 
-document.getElementById("id_topic")?.addEventListener("change", autoTitle);
-document.getElementById("id_type")?.addEventListener("change", autoTitle);
+  // Filtre değişince topic select'i resetle
+  $("#filterGrade, #filterSubject").on("change keyup", function(){
+    $("#topicSelect").val(null).trigger("change");
+    $("#id_topic_id").val("");
+  });
+
+  // Form submit kontrol
+  $("#assignForm").on("submit", function(){
+    if(!$("#id_student_id").val()){
+      alert("Lütfen öğrenci seç.");
+      return false;
+    }
+    return true;
+  });
+});
 </script>
 {% endblock %}

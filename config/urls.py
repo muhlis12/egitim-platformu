@@ -32,6 +32,7 @@ urlpatterns = [
     path("", include("payments.urls")),
     path("", include("manager.urls")),
     path("", include("messaging.urls")),
+    path("", include("notifications.urls")),
 ]
 
 if settings.DEBUG:

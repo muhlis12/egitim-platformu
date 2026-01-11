@@ -64,6 +64,29 @@
 
     <ul class="navbar-nav ml-auto">
       {% if request.user.is_authenticated %}
+
+        <!-- 🔔 Bildirimler (PRO) -->
+        <li class="nav-item dropdown">
+          <a class="nav-link" data-toggle="dropdown" href="#" title="Bildirimler">
+            <i class="far fa-bell"></i>
+            <span id="notifBadge" class="badge badge-danger navbar-badge" style="display:none;">0</span>
+          </a>
+
+          <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right" style="min-width:340px;">
+            <span class="dropdown-header" id="notifHeader">Bildirimler</span>
+            <div class="dropdown-divider"></div>
+
+            <div id="notifList" style="max-height:340px; overflow:auto;">
+              <div class="px-3 py-2 text-muted">Yükleniyor...</div>
+            </div>
+
+            <div class="dropdown-divider"></div>
+            <a href="#" class="dropdown-item dropdown-footer" onclick="notifReadAll(); return false;">
+              Hepsini okundu yap
+            </a>
+          </div>
+        </li>
+
         <li class="nav-item">
           <span class="nav-link">
             <i class="fas fa-user"></i>
@@ -85,6 +108,7 @@
             <i class="fas fa-sign-out-alt"></i> Çıkış
           </a>
         </li>
+
       {% else %}
         <li class="nav-item">
           <a class="nav-link" href="/login/student/">
@@ -115,7 +139,7 @@
             </a>
           </li>
 
-          <!-- ✅ Öğrenci: Bugün Yapacaklarım (Sprint-3) -->
+          <!-- ✅ Öğrenci: Bugün Yapacaklarım -->
           {% if request.user.is_authenticated and request.user.role == "STUDENT" %}
             <li class="nav-item">
               <a href="/daily-plan/" class="nav-link">
@@ -125,7 +149,7 @@
             </li>
           {% endif %}
 
-          <!-- ✅ Öğrenci: Konu Ağacı (Sprint-1) -->
+          <!-- ✅ Öğrenci: Konu Ağacı -->
           {% if request.user.is_authenticated and request.user.role == "STUDENT" %}
             <li class="nav-item">
               <a href="/topics/" class="nav-link">
@@ -135,7 +159,7 @@
             </li>
           {% endif %}
 
-          <!-- ✅ Öğrenci Mesajlar + badge -->
+          <!-- ✅ Öğrenci Mesajlar -->
           {% if request.user.is_authenticated and request.user.role == "STUDENT" %}
             <li class="nav-item">
               <a href="/messages/" class="nav-link">
@@ -150,7 +174,7 @@
             </li>
           {% endif %}
 
-          <!-- Yönetim Paneli (Sadece ADMIN) -->
+          <!-- Yönetim Paneli (ADMIN) -->
           {% if request.user.is_authenticated and request.user.role == "ADMIN" %}
             <li class="nav-item">
               <a href="/manager/" class="nav-link">
@@ -166,7 +190,6 @@
               </a>
             </li>
 
-            <!-- ✅ Admin: Günlük Plan Ata (Sprint-3) -->
             <li class="nav-item">
               <a href="/daily-plan/assign/" class="nav-link">
                 <i class="nav-icon fas fa-calendar-plus"></i>
@@ -175,7 +198,7 @@
             </li>
           {% endif %}
 
-          <!-- Öğretmen Paneli (Sadece TEACHER) -->
+          <!-- Öğretmen Paneli (TEACHER) -->
           {% if request.user.is_authenticated and request.user.role == "TEACHER" %}
             <li class="nav-item">
               <a href="/teacher/" class="nav-link">
@@ -184,7 +207,6 @@
               </a>
             </li>
 
-            <!-- ✅ Öğretmen: Günlük Plan Ata (Sprint-3) -->
             <li class="nav-item">
               <a href="/daily-plan/assign/" class="nav-link">
                 <i class="nav-icon fas fa-calendar-plus"></i>
@@ -192,7 +214,6 @@
               </a>
             </li>
 
-            <!-- ✅ Öğretmen Mesajlar + badge -->
             <li class="nav-item">
               <a href="/teacher/messages/" class="nav-link">
                 <i class="nav-icon fas fa-comments"></i>
@@ -206,7 +227,7 @@
             </li>
           {% endif %}
 
-          <!-- Django Admin (Sadece ADMIN) -->
+          <!-- Django Admin (ADMIN) -->
           {% if request.user.is_authenticated and request.user.role == "ADMIN" %}
             <li class="nav-item">
               <a href="/admin/" class="nav-link" target="_blank">
@@ -246,6 +267,82 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
+<script>
+async function loadNotifs(){
+  try{
+    const res = await fetch("/api/v1/notifications", {credentials:"same-origin"});
+    const j = await res.json();
+    if(!j.ok) return;
+
+    const unread = j.data.unread || 0;
+    const badge = document.getElementById("notifBadge");
+    const list = document.getElementById("notifList");
+    const header = document.getElementById("notifHeader");
+
+    header.textContent = `Bildirimler (${unread} okunmamış)`;
+
+    if(unread > 0){
+      badge.style.display = "inline-block";
+      badge.textContent = unread;
+    }else{
+      badge.style.display = "none";
+    }
+
+    const items = j.data.items || [];
+    if(items.length === 0){
+      list.innerHTML = `<div class="px-3 py-2 text-muted">Bildirim yok.</div>`;
+      return;
+    }
+
+    let html = "";
+    for(const n of items){
+      const title = (n.title || "");
+      const body = (n.body || "");
+      const url = n.url || "";
+      const isRead = !!n.is_read;
+
+      html += `
+        <a href="${url ? url : "#"}" class="dropdown-item" onclick="notifRead(${n.id});">
+          <i class="far fa-bell mr-2"></i>
+          <b style="${isRead ? "font-weight:normal;" : ""}">${title}</b>
+          ${body ? `<div class="text-muted text-sm">${body}</div>` : ""}
+        </a>
+        <div class="dropdown-divider"></div>
+      `;
+    }
+    list.innerHTML = html;
+  }catch(e){}
+}
+
+async function notifRead(id){
+  try{
+    await fetch(`/api/v1/notifications/${id}/read`, {
+      method:"POST",
+      credentials:"same-origin",
+      headers: {"Content-Type":"application/json"},
+      body: "{}"
+    });
+    loadNotifs();
+  }catch(e){}
+}
+
+async function notifReadAll(){
+  try{
+    await fetch(`/api/v1/notifications/read-all`, {
+      method:"POST",
+      credentials:"same-origin",
+      headers: {"Content-Type":"application/json"},
+      body: "{}"
+    });
+    loadNotifs();
+  }catch(e){}
+}
+
+{% if request.user.is_authenticated %}
+setTimeout(loadNotifs, 400);
+{% endif %}
+</script>
 
 {% block extra_js %}{% endblock %}
 </body>

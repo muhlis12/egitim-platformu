@@ -21,7 +21,6 @@ def lesson_detail(request, lesson_id):
     lesson = get_object_or_404(Lesson, id=lesson_id)
     user = request.user
 
-    # erişim kontrol
     if user.role == "ADMIN":
         allowed = True
     elif user.role == "TEACHER":
@@ -41,7 +40,6 @@ def lesson_complete(request, lesson_id):
     lesson = get_object_or_404(Lesson, id=lesson_id)
     user = request.user
 
-    # sadece enrolled student tamamlasın
     if user.role != "STUDENT":
         return redirect("lesson_detail", lesson_id=lesson_id)
 
@@ -92,7 +90,9 @@ def _teacher_or_admin_required(user):
 def daily_plan_assign(request):
     """
     Teacher/Admin: günlük plana görev ekler.
-    Form artık username değil, student dropdown kullanıyor.
+    ✅ Select2 AJAX kullanıyoruz:
+      - form: student_id, topic_id gönderir
+      - öğrenci/konu objelerini burada çekiyoruz
     """
     if not _teacher_or_admin_required(request.user):
         return redirect("/dashboard/")
@@ -100,20 +100,36 @@ def daily_plan_assign(request):
     if request.method == "POST":
         form = DailyPlanAssignForm(request.POST)
         if form.is_valid():
-            student = form.cleaned_data["student"]   # ✅ username yerine student
+            student_id = form.cleaned_data["student_id"]
+            topic_id = form.cleaned_data.get("topic_id")
             date = form.cleaned_data["date"]
             typ = form.cleaned_data["type"]
-            title = form.cleaned_data["title"]
-            topic = form.cleaned_data["topic"]
+            title = (form.cleaned_data.get("title") or "").strip()
 
-            # güvenlik: sadece student rolü
-            if getattr(student, "role", None) != "STUDENT":
-                messages.error(request, "Seçilen kullanıcı STUDENT değil.")
+            student = User.objects.filter(id=student_id, role="STUDENT").first()
+            if not student:
+                messages.error(request, "Öğrenci bulunamadı veya rol STUDENT değil.")
                 return redirect("daily_plan_assign")
 
-            plan, _ = DailyPlan.objects.get_or_create(user=student, date=date)
+            topic = None
+            if topic_id:
+                topic = TopicTemplate.objects.filter(id=topic_id).first()
 
+            # Başlık boşsa otomatik üret
+            if not title:
+                label_map = {
+                    "review": "Tekrar",
+                    "topic": "Yeni Konu",
+                    "video": "Video",
+                    "test": "Mini Test",
+                    "custom": "Görev",
+                }
+                base = label_map.get(typ, "Görev")
+                title = f"{base}: {topic.title}" if topic else base
+
+            plan, _ = DailyPlan.objects.get_or_create(user=student, date=date)
             last_order = plan.items.order_by("-order").values_list("order", flat=True).first() or 0
+
             DailyPlanItem.objects.create(
                 plan=plan,
                 type=typ,
