@@ -57,11 +57,25 @@ def gate_parent(request):
 
 @login_required
 def gate_admin(request):
+    """
+    Admin girişi:
+    - Custom /login/admin/ ekranında "yetkin yok" hatası almamak için
+      Django'nun kendi yetkisini (is_staff / is_superuser) baz alıyoruz.
+    - Role sistemi varsa, role "ADMIN" değil diye admini kilitlemeyelim.
+    """
     user = request.user
-    if getattr(user, "role", None) != "ADMIN" or not (user.is_staff or user.is_superuser):
+
+    # Django admin yetkisi yoksa admin paneline sokma
+    if not (user.is_staff or user.is_superuser):
         logout(request)
         messages.error(request, "Admin girişi için yetkin yok.")
         return redirect("/login/admin/")
+
+    # İstersen superuser ise role otomatik ADMIN yap (opsiyonel)
+    # if user.is_superuser and getattr(user, "role", None) != "ADMIN":
+    #     user.role = "ADMIN"
+    #     user.save(update_fields=["role"])
+
     return redirect("/manager/")
 
 
