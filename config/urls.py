@@ -1,39 +1,44 @@
 """
 URL configuration for config project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
+
+
+def root_redirect(request):
+    # Ana sayfa → Admin giriş ekranı (custom admin login)
+    return redirect("/login/admin/")
+
 
 urlpatterns = [
-    # Login/Logout/After-login route'ları burada
+    # ROOT (/) mutlaka en üstte olsun
+    path("", root_redirect),
+
+    # Login/Logout/After-login route'ları (accounts içinden)
     path("", include("accounts.urls")),
 
+    # Django admin panel (opsiyonel kullanım)
     path("admin/", admin.site.urls),
+
+    # Modüller
     path("dashboard/", include("dashboard.urls")),
     path("courses/", include("courses.urls")),
     path("teacher/", include("teacher.urls")),
+
+    # Diğer app'ler (kendi içlerinde path'leri var)
     path("", include("content.urls")),
     path("", include("quiz.urls")),
     path("", include("payments.urls")),
     path("", include("manager.urls")),
     path("", include("messaging.urls")),
     path("", include("notifications.urls")),
+    path("", include("parents.urls")),
 ]
 
+# Media sadece DEBUG'da (prod'da Nginx servis etmeli)
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,60 @@
+{% extends "layout/base.html" %}
+{% block title %}Kullanıcılar{% endblock %}
+{% block page_title %}Kullanıcı Yönetimi{% endblock %}
+
+{% block content %}
+<div class="card card-outline card-primary">
+  <div class="card-header">
+    <h3 class="card-title mb-0"><i class="fas fa-users"></i> Kullanıcılar</h3>
+    <div class="card-tools">
+      <a href="/manager/users/new/" class="btn btn-sm btn-primary">
+        <i class="fas fa-user-plus"></i> Yeni Kullanıcı
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <form class="form-inline mb-3">
+      <input class="form-control mr-2" name="q" value="{{ q }}" placeholder="username ara...">
+      <select class="form-control mr-2" name="role">
+        <option value="">Tümü</option>
+        <option value="STUDENT" {% if role == "STUDENT" %}selected{% endif %}>Öğrenci</option>
+        <option value="TEACHER" {% if role == "TEACHER" %}selected{% endif %}>Öğretmen</option>
+        <option value="PARENT" {% if role == "PARENT" %}selected{% endif %}>Veli</option>
+        <option value="ADMIN" {% if role == "ADMIN" %}selected{% endif %}>Yönetici</option>
+      </select>
+      <button class="btn btn-secondary">Filtrele</button>
+    </form>
+
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Kullanıcı</th>
+            <th>Ad Soyad</th>
+            <th>Rol</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u.id }}</td>
+            <td><b>{{ u.username }}</b></td>
+            <td>{{ u.first_name }} {{ u.last_name }}</td>
+            <td>{{ u.role }}</td>
+            <td>
+              <a class="btn btn-sm btn-warning" href="/manager/users/{{ u.id }}/edit/">Düzenle</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-muted">Kullanıcı yok.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

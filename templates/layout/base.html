@@ -65,9 +65,9 @@
     <ul class="navbar-nav ml-auto">
       {% if request.user.is_authenticated %}
 
-        <!-- 🔔 Bildirimler (PRO) -->
+        <!-- 🔔 Bildirimler -->
         <li class="nav-item dropdown">
-          <a class="nav-link" data-toggle="dropdown" href="#" title="Bildirimler">
+          <a class="nav-link" data-toggle="dropdown" href="#" title="Bildirimler" id="notifDropdownBtn">
             <i class="far fa-bell"></i>
             <span id="notifBadge" class="badge badge-danger navbar-badge" style="display:none;">0</span>
           </a>
@@ -96,6 +96,8 @@
               Yönetici
             {% elif request.user.role == "TEACHER" %}
               Öğretmen
+            {% elif request.user.role == "PARENT" %}
+              Veli
             {% else %}
               Öğrenci
             {% endif %}
@@ -111,7 +113,7 @@
 
       {% else %}
         <li class="nav-item">
-          <a class="nav-link" href="/login/student/">
+          <a class="nav-link" href="/login/">
             <i class="fas fa-sign-in-alt"></i> Giriş Yap
           </a>
         </li>
@@ -131,7 +133,7 @@
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
 
-          <!-- Anasayfa (Herkes) -->
+          <!-- Anasayfa -->
           <li class="nav-item">
             <a href="/dashboard/" class="nav-link">
               <i class="nav-icon fas fa-home"></i>
@@ -139,7 +141,17 @@
             </a>
           </li>
 
-          <!-- ✅ Öğrenci: Bugün Yapacaklarım -->
+          <!-- ✅ Veli -->
+          {% if request.user.is_authenticated and request.user.role == "PARENT" %}
+            <li class="nav-item">
+              <a href="/parent/" class="nav-link">
+                <i class="nav-icon fas fa-users"></i>
+                <p>Veli Paneli</p>
+              </a>
+            </li>
+          {% endif %}
+
+          <!-- ✅ Öğrenci -->
           {% if request.user.is_authenticated and request.user.role == "STUDENT" %}
             <li class="nav-item">
               <a href="/daily-plan/" class="nav-link">
@@ -147,20 +159,14 @@
                 <p>Bugün Yapacaklarım</p>
               </a>
             </li>
-          {% endif %}
 
-          <!-- ✅ Öğrenci: Konu Ağacı -->
-          {% if request.user.is_authenticated and request.user.role == "STUDENT" %}
             <li class="nav-item">
               <a href="/topics/" class="nav-link">
                 <i class="nav-icon fas fa-sitemap"></i>
                 <p>Konu Ağacı</p>
               </a>
             </li>
-          {% endif %}
 
-          <!-- ✅ Öğrenci Mesajlar -->
-          {% if request.user.is_authenticated and request.user.role == "STUDENT" %}
             <li class="nav-item">
               <a href="/messages/" class="nav-link">
                 <i class="nav-icon fas fa-comments"></i>
@@ -174,7 +180,7 @@
             </li>
           {% endif %}
 
-          <!-- Yönetim Paneli (ADMIN) -->
+          <!-- ✅ Admin -->
           {% if request.user.is_authenticated and request.user.role == "ADMIN" %}
             <li class="nav-item">
               <a href="/manager/" class="nav-link">
@@ -190,15 +196,30 @@
               </a>
             </li>
 
+            <!-- ✅ Kullanıcı Yönetimi -->
+            <li class="nav-item">
+              <a href="/manager/users/" class="nav-link">
+                <i class="nav-icon fas fa-users"></i>
+                <p>Kullanıcı Yönetimi</p>
+              </a>
+            </li>
+
             <li class="nav-item">
               <a href="/daily-plan/assign/" class="nav-link">
                 <i class="nav-icon fas fa-calendar-plus"></i>
                 <p>Günlük Plan Ata</p>
               </a>
             </li>
+
+            <li class="nav-item">
+              <a href="/admin/" class="nav-link" target="_blank">
+                <i class="nav-icon fas fa-cog"></i>
+                <p>Django Admin</p>
+              </a>
+            </li>
           {% endif %}
 
-          <!-- Öğretmen Paneli (TEACHER) -->
+          <!-- ✅ Teacher -->
           {% if request.user.is_authenticated and request.user.role == "TEACHER" %}
             <li class="nav-item">
               <a href="/teacher/" class="nav-link">
@@ -223,16 +244,6 @@
                     <span class="badge badge-danger right">{{ unread_total }}</span>
                   {% endif %}
                 </p>
-              </a>
-            </li>
-          {% endif %}
-
-          <!-- Django Admin (ADMIN) -->
-          {% if request.user.is_authenticated and request.user.role == "ADMIN" %}
-            <li class="nav-item">
-              <a href="/admin/" class="nav-link" target="_blank">
-                <i class="nav-icon fas fa-cog"></i>
-                <p>Django Admin</p>
               </a>
             </li>
           {% endif %}
@@ -302,8 +313,9 @@ async function loadNotifs(){
       const url = n.url || "";
       const isRead = !!n.is_read;
 
+      // önce okundu yap, sonra yönlendir
       html += `
-        <a href="${url ? url : "#"}" class="dropdown-item" onclick="notifRead(${n.id});">
+        <a href="${url ? url : "#"}" class="dropdown-item" onclick="return notifRead(event, ${n.id});">
           <i class="far fa-bell mr-2"></i>
           <b style="${isRead ? "font-weight:normal;" : ""}">${title}</b>
           ${body ? `<div class="text-muted text-sm">${body}</div>` : ""}
@@ -315,16 +327,28 @@ async function loadNotifs(){
   }catch(e){}
 }
 
-async function notifRead(id){
+async function notifRead(ev, id){
   try{
+    if(ev) ev.preventDefault();
+    const a = ev ? ev.currentTarget : null;
+    const url = a ? a.getAttribute("href") : "";
+
     await fetch(`/api/v1/notifications/${id}/read`, {
       method:"POST",
       credentials:"same-origin",
       headers: {"Content-Type":"application/json"},
       body: "{}"
     });
+
     loadNotifs();
-  }catch(e){}
+
+    if(url && url !== "#"){
+      window.location.href = url;
+    }
+    return false;
+  }catch(e){
+    return true;
+  }
 }
 
 async function notifReadAll(){
@@ -341,6 +365,12 @@ async function notifReadAll(){
 
 {% if request.user.is_authenticated %}
 setTimeout(loadNotifs, 400);
+document.addEventListener("DOMContentLoaded", function(){
+  const btn = document.getElementById("notifDropdownBtn");
+  if(btn){
+    btn.addEventListener("click", function(){ loadNotifs(); });
+  }
+});
 {% endif %}
 </script>
 

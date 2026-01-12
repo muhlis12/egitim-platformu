@@ -27,37 +27,47 @@ SECRET_KEY = os.getenv(
     "django-insecure-b6+okwo2cb&d=70s(mbly3n(iz8vsutowhrvdd0$+1hh3pu85p",
 )
 
-# Prod'da default False olsun
+# Prod'da default False olsun (env: DJANGO_DEBUG=1 yaparsan açılır)
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 
-# Hostlar env'den gelsin
+# -------------------------------------------------
+# HOST / CSRF (LOGIN POST için kritik)
+# -------------------------------------------------
 # Örn: DJANGO_ALLOWED_HOSTS="34.52.203.126,egitim.1imzakurs.com,localhost,127.0.0.1"
 _allowed_hosts = os.getenv(
     "DJANGO_ALLOWED_HOSTS",
-    "127.0.0.1,localhost,0.0.0.0,egitim.1imzakurs.com,34.52.203.126"
+    "127.0.0.1,localhost,0.0.0.0,egitim.1imzakurs.com,34.52.203.126",
 )
 ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts.split(",") if h.strip()]
 
-# CSRF trusted origins (login POST için kritik)
 # Örn: DJANGO_CSRF_TRUSTED_ORIGINS="https://egitim.1imzakurs.com,http://egitim.1imzakurs.com"
 _csrf = os.getenv(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
-    "https://egitim.1imzakurs.com,http://egitim.1imzakurs.com"
+    "https://egitim.1imzakurs.com,http://egitim.1imzakurs.com",
 )
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf.split(",") if o.strip()]
 
-# Reverse proxy arkasında güvenli HTTPS algısı
-# (Nginx "X-Forwarded-Proto" gönderdiği için)
+# -------------------------------------------------
+# PROXY / HTTPS (NGINX arkasında)
+# -------------------------------------------------
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
-# HTTPS zorunlu olacaksa ENV ile aç
+# SSL kurunca env ile aç:
 # DJANGO_SECURE_SSL_REDIRECT=1
 SECURE_SSL_REDIRECT = os.getenv("DJANGO_SECURE_SSL_REDIRECT", "0") == "1"
 
-# Cookie güvenliği (HTTPS'te anlamlı)
+# Cookie güvenliği (SSL kurmadan 0 kalsın, SSL kurunca 1 yap)
 SESSION_COOKIE_SECURE = os.getenv("DJANGO_SESSION_COOKIE_SECURE", "0") == "1"
 CSRF_COOKIE_SECURE = os.getenv("DJANGO_CSRF_COOKIE_SECURE", "0") == "1"
+
+SESSION_COOKIE_SAMESITE = os.getenv("DJANGO_SESSION_COOKIE_SAMESITE", "Lax")
+CSRF_COOKIE_SAMESITE = os.getenv("DJANGO_CSRF_COOKIE_SAMESITE", "Lax")
+
+# PROD’da header güvenliği (opsiyonel ama faydalı)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_REFERRER_POLICY = "same-origin"
 
 # -------------------------------------------------
 # APPS
@@ -85,6 +95,7 @@ INSTALLED_APPS = [
     "dashboard",
     "messaging",
     "notifications",
+    "parents",
 ]
 
 # -------------------------------------------------
@@ -117,6 +128,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -144,7 +156,7 @@ if DATABASE_URL:
             "default": {
                 "ENGINE": "django.db.backends.sqlite3",
                 "NAME": BASE_DIR / "db.sqlite3",
-                "OPTIONS": {"timeout": 20},
+                "OPTIONS": {"timeout": 30},
             }
         }
 else:
@@ -152,7 +164,7 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
-            "OPTIONS": {"timeout": 20},
+            "OPTIONS": {"timeout": 30},
         }
     }
 
@@ -187,7 +199,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# WhiteNoise
 STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
@@ -207,4 +218,26 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+}
+
+# -------------------------------------------------
+# LOGGING (500 sebeplerini journalctl ile görmek için)
+# -------------------------------------------------
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {"class": "logging.StreamHandler"},
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG" if DEBUG else "INFO",
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
 }

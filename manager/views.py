@@ -2,14 +2,25 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
 from accounts.utils import admin_required
 from courses.models import Course, Enrollment
 from content.models import Lesson, TopicTemplate
-from .forms import CourseCreateForm, AssignTeacherForm, EnrollStudentForm, ReadyLessonsForm
+from parents.models import ParentStudent
+
+from .forms import (
+    CourseCreateForm, AssignTeacherForm, EnrollStudentForm, ReadyLessonsForm,
+    AdminUserCreateForm, AdminUserEditForm,
+    StudentWithParentCreateForm,
+)
 
 User = get_user_model()
 
+
+# ---------------------------
+# Courses
+# ---------------------------
 
 @login_required
 @admin_required
@@ -24,8 +35,8 @@ def manager_course_new(request):
     if request.method == "POST":
         form = CourseCreateForm(request.POST)
         if form.is_valid():
-            course = form.save(commit=False)   # ✅ kritik
-            course.owner = request.user        # ✅ NULL olmasın
+            course = form.save(commit=False)
+            course.owner = request.user  # NOT NULL fix
             course.save()
             messages.success(request, "Kurs oluşturuldu. İstersen şimdi öğretmen atayabilirsin.")
             return redirect("manager_courses")
@@ -35,15 +46,9 @@ def manager_course_new(request):
     return render(request, "manager/course_new.html", {"form": form})
 
 
-
 @login_required
 @admin_required
 def manager_assign_teacher(request, course_id):
-    """
-    Öğretmen atama:
-    - Mevcut yapıda owner alanı öğretmen gibi kullanılıyor.
-    - Bu yüzden teacher seçilince course.owner = teacher yapılır.
-    """
     course = get_object_or_404(Course, id=course_id)
 
     if request.method == "POST":
@@ -97,12 +102,6 @@ def manager_course_students(request, course_id):
 @login_required
 @admin_required
 def manager_ready_lessons(request, course_id):
-    """
-    Hazır ders ekleme (TopicTemplate -> Lesson):
-    - grade+subject seçilir
-    - üst konular ders, alt konular alt ders gibi eklenir
-    - course.grade güncellenir
-    """
     course = get_object_or_404(Course, id=course_id)
     form = ReadyLessonsForm(request.POST or None)
 
@@ -141,3 +140,107 @@ def manager_ready_lessons(request, course_id):
         return redirect("manager_courses")
 
     return render(request, "manager/ready_lessons.html", {"course": course, "form": form})
+
+
+# ---------------------------
+# Users (Admin)
+# ---------------------------
+
+@login_required
+@admin_required
+def manager_users(request):
+    q = (request.GET.get("q") or "").strip()
+    role = (request.GET.get("role") or "").strip().upper()
+
+    qs = User.objects.all().order_by("-id")
+
+    if role in ("STUDENT", "TEACHER", "ADMIN", "PARENT"):
+        qs = qs.filter(role=role)
+
+    if q:
+        qs = qs.filter(username__icontains=q)
+
+    return render(request, "manager/users.html", {"users": qs[:200], "q": q, "role": role})
+
+
+@login_required
+@admin_required
+def manager_user_new(request):
+    if request.method == "POST":
+        form = AdminUserCreateForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Kullanıcı oluşturuldu.")
+            return redirect("manager_users")
+    else:
+        form = AdminUserCreateForm()
+
+    return render(request, "manager/user_new.html", {"form": form})
+
+
+@login_required
+@admin_required
+def manager_user_edit(request, user_id: int):
+    user = get_object_or_404(User, id=user_id)
+
+    if request.method == "POST":
+        form = AdminUserEditForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Kullanıcı güncellendi.")
+            return redirect("manager_users")
+    else:
+        form = AdminUserEditForm(instance=user)
+
+    return render(request, "manager/user_edit.html", {"form": form, "u": user})
+
+
+# ---------------------------
+# PRO: Student + Parent create + link
+# ---------------------------
+
+@login_required
+@admin_required
+def manager_student_new_with_parent(request):
+    """
+    Tek ekranda Öğrenci + Veli oluşturur ve ParentStudent ile eşleştirir.
+    """
+    if request.method == "POST":
+        form = StudentWithParentCreateForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                # Student
+                su = form.cleaned_data["student_username"].strip()
+                sp = form.cleaned_data["student_password"]
+
+                student = User(
+                    username=su,
+                    first_name=form.cleaned_data.get("student_first_name", ""),
+                    last_name=form.cleaned_data.get("student_last_name", ""),
+                    role="STUDENT",
+                )
+                student.set_password(sp)
+                student.save()
+
+                # Parent
+                pu = form.cleaned_data["parent_username"].strip()
+                pp = form.cleaned_data["parent_password"]
+
+                parent = User(
+                    username=pu,
+                    first_name=form.cleaned_data.get("parent_first_name", ""),
+                    last_name=form.cleaned_data.get("parent_last_name", ""),
+                    role="PARENT",
+                )
+                parent.set_password(pp)
+                parent.save()
+
+                # Link
+                ParentStudent.objects.get_or_create(parent=parent, student=student)
+
+            messages.success(request, "Öğrenci + Veli oluşturuldu ve eşleştirildi ✅")
+            return redirect("manager_users")
+    else:
+        form = StudentWithParentCreateForm()
+
+    return render(request, "manager/student_new_with_parent.html", {"form": form})

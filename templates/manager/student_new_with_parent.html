@@ -1,0 +1,19 @@
+{% extends "layout/base.html" %}
+{% block title %}Öğrenci + Veli Oluştur{% endblock %}
+{% block page_title %}Öğrenci + Veli Oluştur{% endblock %}
+
+{% block content %}
+<div class="card card-outline card-success">
+  <div class="card-header">
+    <h3 class="card-title mb-0"><i class="fas fa-user-plus"></i> Yeni Kayıt</h3>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn btn-success">Kaydet</button>
+      <a class="btn btn-secondary" href="/manager/users/">Geri</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

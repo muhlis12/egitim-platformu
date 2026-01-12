@@ -1,0 +1,71 @@
+{% extends "layout/base.html" %}
+{% load dict_extras %}
+{% block title %}Veli Paneli{% endblock %}
+{% block page_title %}Veli Paneli{% endblock %}
+
+{% block content %}
+<div class="card card-outline card-primary">
+  <div class="card-header">
+    <h3 class="card-title mb-0"><i class="fas fa-users"></i> Öğrencilerim ({{ today }})</h3>
+  </div>
+  <div class="card-body">
+    {% if links %}
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Öğrenci</th>
+              <th>Bugünkü Plan</th>
+              <th>Bugün Tekrar</th>
+              <th>XP</th>
+              <th>Seri</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in links %}
+              {% with sid=l.student.id %}
+              <tr>
+                <td><b>{{ l.student.username }}</b></td>
+
+                <td>
+                  {% with p=plan_map|get_item:sid %}
+                    {% if p %}
+                      <span class="badge badge-info">{{ p.completion_rate }}%</span>
+                      {% if p.is_completed %}
+                        <span class="badge badge-success ml-1">Tamamlandı</span>
+                      {% else %}
+                        <span class="badge badge-warning ml-1">Devam</span>
+                      {% endif %}
+                    {% else %}
+                      <span class="text-muted">Plan yok</span>
+                    {% endif %}
+                  {% endwith %}
+                </td>
+
+                <td>
+                  <span class="badge badge-warning">{{ review_map|get_item:sid|default:0 }}</span>
+                </td>
+
+                <td>
+                  {% with s=stats_map|get_item:sid %}
+                    {% if s %}{{ s.xp }}{% else %}0{% endif %}
+                  {% endwith %}
+                </td>
+
+                <td>
+                  {% with s=stats_map|get_item:sid %}
+                    {% if s %}{{ s.streak }}{% else %}0{% endif %}
+                  {% endwith %}
+                </td>
+              </tr>
+              {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-muted">Henüz sana bağlı öğrenci yok. Yönetici/öğretmen öğrenci bağlamalı.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

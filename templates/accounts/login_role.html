@@ -5,6 +5,7 @@
   <title>Eğitim Platformu | Giriş</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- ✅ DOĞRU CDN -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
 </head>
@@ -19,13 +20,16 @@
     <div class="card-body login-card-body">
 
       {% if role_key == "student" %}
-        <h5 class="text-center mb-2"><i class="fas fa-user-graduate"></i> Kursiyer Girişi</h5>
+        <h5 class="text-center mb-2"><i class="fas fa-user-graduate"></i> Öğrenci Girişi</h5>
         <p class="text-muted text-center mb-3">Derslere, ödevlere ve sınavlara buradan ulaşabilirsiniz.</p>
       {% elif role_key == "teacher" %}
-        <h5 class="text-center mb-2"><i class="fas fa-chalkboard-teacher"></i> Eğitmen Girişi</h5>
-        <p class="text-muted text-center mb-3">Kurs yönetimi, canlı ders, içerik ve sınavları buradan yönetirsiniz.</p>
+        <h5 class="text-center mb-2"><i class="fas fa-chalkboard-teacher"></i> Öğretmen Girişi</h5>
+        <p class="text-muted text-center mb-3">Görev, içerik ve öğrenci takibini buradan yönetirsiniz.</p>
+      {% elif role_key == "parent" %}
+        <h5 class="text-center mb-2"><i class="fas fa-users"></i> Veli Girişi</h5>
+        <p class="text-muted text-center mb-3">Öğrencinizin planını ve ilerlemesini buradan takip edebilirsiniz.</p>
       {% else %}
-        <h5 class="text-center mb-2"><i class="fas fa-user-shield"></i> Admin Girişi</h5>
+        <h5 class="text-center mb-2"><i class="fas fa-user-shield"></i> Yönetici Girişi</h5>
         <p class="text-muted text-center mb-3">Yönetim paneline erişim.</p>
       {% endif %}
 
@@ -42,11 +46,13 @@
       <form method="post">
         {% csrf_token %}
 
-        <!-- ✅ Role göre doğru panel yönlendirmesi -->
+        <!-- ✅ Role göre doğru gate -->
         {% if role_key == "admin" %}
           <input type="hidden" name="next" value="/gate/admin/">
         {% elif role_key == "teacher" %}
           <input type="hidden" name="next" value="/gate/teacher/">
+        {% elif role_key == "parent" %}
+          <input type="hidden" name="next" value="/gate/parent/">
         {% else %}
           <input type="hidden" name="next" value="/gate/student/">
         {% endif %}
@@ -83,15 +89,16 @@
       <div class="mt-3 d-flex justify-content-between">
         <a href="/password-reset/"><i class="fas fa-key"></i> Şifremi unuttum</a>
         <div>
-          <a href="/login/student/">Kursiyer</a> |
-          <a href="/login/teacher/">Eğitmen</a> |
-          <a href="/login/admin/">Admin</a>
+          <a href="/login/student/">Öğrenci</a> |
+          <a href="/login/teacher/">Öğretmen</a> |
+          <a href="/login/parent/">Veli</a> |
+          <a href="/login/admin/">Yönetici</a>
         </div>
       </div>
 
       <hr>
       <p class="mb-0 text-center">
-        <small>© {{ now|date:"Y" }} Eğitim Platformu</small>
+        <small>© {% now "Y" %} Eğitim Platformu</small>
       </p>
 
     </div>

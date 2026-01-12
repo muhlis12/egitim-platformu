@@ -5,17 +5,11 @@ from django.contrib.auth.decorators import login_required
 
 
 def login_choice(request):
-    """
-    /login/ -> 4 kutulu giriş seçim ekranı
-    """
     return render(request, "accounts/login_choice.html")
 
 
 @login_required
 def after_login(request):
-    """
-    Login sonrası tek yerden yönlendirme (PRO)
-    """
     role = getattr(request.user, "role", None)
 
     if role == "ADMIN":
@@ -25,16 +19,13 @@ def after_login(request):
         return redirect("/teacher/")
 
     if role == "PARENT":
-        return redirect("/dashboard/")  # ileride /parent/ yaparız
+        return redirect("/parent/")
 
     # STUDENT ve diğerleri
     return redirect("/dashboard/")
 
 
 def role_gate(request, allowed_roles: tuple, redirect_to: str = "/login/"):
-    """
-    Login olduktan sonra rol uygun değilse çıkış yaptır ve doğru giriş sayfasına at.
-    """
     if not request.user.is_authenticated:
         return None
 
@@ -54,7 +45,6 @@ def gate_student(request):
 
 @login_required
 def gate_teacher(request):
-    # Öğretmen paneline admin de girebilsin istiyorsan bırak
     resp = role_gate(request, ("TEACHER", "ADMIN"), "/login/teacher/")
     return resp or redirect("/teacher/")
 
@@ -62,19 +52,16 @@ def gate_teacher(request):
 @login_required
 def gate_parent(request):
     resp = role_gate(request, ("PARENT",), "/login/parent/")
-    return resp or redirect("/dashboard/")  # ileride /parent/
+    return resp or redirect("/parent/")
 
 
 @login_required
 def gate_admin(request):
     user = request.user
-
-    # ADMIN rolü + staff veya superuser şart
     if getattr(user, "role", None) != "ADMIN" or not (user.is_staff or user.is_superuser):
         logout(request)
         messages.error(request, "Admin girişi için yetkin yok.")
         return redirect("/login/admin/")
-
     return redirect("/manager/")
 
 
